@@ -197,6 +197,3 @@ def main():
 
     export_tree(t, args.output_path, args.title)
 
-
-if __name__ == "__main__":
-    main()
