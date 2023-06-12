@@ -1,0 +1,36 @@
+
+stages:
+  - dependencies
+  - build
+  - test
+
+dependencies:
+  stage: dependencies
+  script:
+    - apt-get update
+    - apt-get install -y python3 python3-pip
+    - apt-get install -y libgl-dev python3-pyqt5 python3-pyqt5.qtopengl python3-pyqt5.qtsvg
+
+build:
+  stage: build
+  script:
+    - pip3 install '.'
+    - pip3 install '.[testing]'
+
+test:
+  before_script:
+    - pip3 install pytest-cov
+  script:
+    - pytest -v
+      --junitxml=report.xml
+      --cov=lib
+      --cov-report term
+      --cov-report xml:coverage.xml
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: report.xml
