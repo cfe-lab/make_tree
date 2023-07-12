@@ -1,36 +1,47 @@
-
+---
 stages:
-  - dependencies
-  - build
   - test
 
-dependencies:
-  stage: dependencies
+.test-matrix:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  parallel:
+    matrix:
+      - PYTHON_VERSION:
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+
+test-matrix:
+  extends: .test-matrix
+  before_script:
+    - cd $CI_PROJECT_DIR
+    - pip install --upgrade hatch
   script:
+    - hatch env run --env test no-cov
+
+test-matrix-cmd-line:
+  extends: .test-matrix
+  before_script:
+    - cd $CI_PROJECT_DIR
+  script:
+    - pip install .
+    - make_tree "(A,B,(C,D),E);"
+
+generate-test-report:
+  stage: test
+  image: ubuntu:latest
+  before_script:
     - apt-get update
     - apt-get install -y python3 python3-pip
-    - apt-get install -y libgl-dev python3-pyqt5 python3-pyqt5.qtopengl python3-pyqt5.qtsvg
-
-build:
-  stage: build
+    - pip install --upgrade hatch
   script:
-    - pip3 install '.'
-    - pip3 install '.[testing]'
-
-test:
-  before_script:
-    - pip3 install pytest-cov
-  script:
-    - pytest -v
-      --junitxml=report.xml
-      --cov=lib
-      --cov-report term
-      --cov-report xml:coverage.xml
+    - hatch env run --env test ci-report
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
-    when: always
     reports:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-      junit: report.xml
+      junit: unit_test.xml
