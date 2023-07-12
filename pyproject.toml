@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "make_tree"
 description = 'Simple script for drawing phylogenetic trees'
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.6"
 license = "GPL-3.0"
 keywords = ["ete3", "tree maker", "pdf"]
 authors = [
