@@ -27,7 +27,7 @@ test-matrix-cmd-line:
     - cd $CI_PROJECT_DIR
   script:
     - pip install .
-    - make_tree "(A,B,(C,D),E);"
+    - make_tree "(A,B,(C,D),E);" test.pdf "foo bar"
 
 generate-test-report:
   stage: test

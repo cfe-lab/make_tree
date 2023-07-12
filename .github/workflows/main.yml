@@ -34,7 +34,7 @@ jobs:
       - name: Run in cmd line
         run: |
           pip install .
-          make_tree "(A,B,(C,D),E);"
+          make_tree "(A,B,(C,D),E);" test.pdf "foo bar"
   test:
     name: Test and report on ubuntu-latest
     runs-on: ubuntu-latest
