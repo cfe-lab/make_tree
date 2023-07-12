@@ -30,7 +30,8 @@ jobs:
       - name: Run tests and track code coverage
         run: |
           hatch env run --env test ci-report
-  build:
+  test:
+    name: Test and report on ubuntu-latest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

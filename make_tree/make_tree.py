@@ -91,7 +91,7 @@ def export_tree(
     output_path: str,
     title: Optional[str] = None,
     variable_height: bool = False,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Exports tree to a file
 
