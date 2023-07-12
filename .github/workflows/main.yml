@@ -28,7 +28,8 @@ jobs:
         run: pip install --upgrade hatch
 
       - name: Run tests and track code coverage
-        run: hatch run cov
+        run: |
+          hatch env run --env test ci-report
   build:
     runs-on: ubuntu-latest
     steps:
