@@ -1,6 +1,5 @@
 .env*
 .coverage
-report.xml
 build/
 *.egg-info/
 coverage
@@ -8,6 +7,6 @@ test/reports
 .venv
 __pycache__
 .pytest_cache
-coverage.xml
 .mypy_cache
 output/
+*.xml
