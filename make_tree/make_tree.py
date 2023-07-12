@@ -16,7 +16,7 @@ import argparse
 import os
 import re
 import sys
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional, Dict
 
 import ete3  # Tree drawing library
 
@@ -44,7 +44,7 @@ COLOUR_LIST = [
 LABEL_RE = re.compile(r"(i|b)?([0-9]+)?!!(.*)")
 
 
-def parse_label(label: str) -> Tuple[str | None, int | None, str]:
+def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
     """
     _summary_
 
@@ -76,7 +76,7 @@ def parse_label(label: str) -> Tuple[str | None, int | None, str]:
     return (font, _colourindex, name)
 
 
-def get_result_dimensions(result: dict[str, Any]) -> Tuple[int, int]:
+def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
     """Returns the width and the height of exported tree image."""
 
     get_x2 = lambda m: m[2]

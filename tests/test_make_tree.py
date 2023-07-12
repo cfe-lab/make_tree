@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 import ete3
 import pytest
@@ -24,7 +24,7 @@ from make_tree.make_tree import (
         ("b2!!test", ("b", 2, "test")),
     ],
 )
-def test_parse_label_basic(input: str, exp_output: Tuple[str | None, int | None, str]):
+def test_parse_label_basic(input: str, exp_output: Tuple[Optional[str], Optional[int], str]):
     assert parse_label(input) == exp_output
 
 
