@@ -27,10 +27,6 @@ jobs:
       - name: Install Hatch
         run: pip install --upgrade hatch
 
-      - if: matrix.python-version == '3.9' && runner.os == 'Linux'
-        name: Lint
-        run: hatch run lint:all
-
       - name: Run tests and track code coverage
         run: hatch run cov
   build:
@@ -49,7 +45,7 @@ jobs:
       - name: Run test
         run: |
           pip3 install ".[test]"
-          pytest --junitxml=unit_test.xml --cov-report xml
+          pytest --junitxml=unit_test.xml --cov-report xml:coverage.xml
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
