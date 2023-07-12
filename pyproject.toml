@@ -96,7 +96,7 @@ full-report = "pytest --junitxml=unit_test.xml --html=test_report.html --self-co
 no-cov = "cov --no-cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["38", "39", "310", "311"]
+python = ["36", "37", "38", "39", "310", "311"]
 
 [tool.pytest.ini_options]
 pythonpath = "."
