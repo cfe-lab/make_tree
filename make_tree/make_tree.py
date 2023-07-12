@@ -56,7 +56,7 @@ def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
     :rtype: Tuple[str | None, int | None, str]
     """
     match = LABEL_RE.match(label)
-    _colourindex: int | None = None
+    _colourindex: Optional[int] = None
     font, colourindex, name = (None, None, label)
 
     if match:
@@ -89,7 +89,7 @@ def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
 def export_tree(
     t: ete3.Tree,
     output_path: str,
-    title: str | None = None,
+    title: Optional[str] = None,
     variable_height: bool = False,
 ) -> dict[str, Any]:
     """
@@ -116,7 +116,7 @@ def export_tree(
     ts.min_leaf_separation = 0
 
     w = 8.5
-    h: int | None = None
+    h: Optional[int] = None
 
     if not variable_height:
         h = 11
