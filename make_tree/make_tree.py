@@ -14,8 +14,10 @@ Global Variables:
 
 import argparse
 import os
-import sys
 import re
+import sys
+from typing import Any, Tuple
+
 import ete3  # Tree drawing library
 
 COLOUR_LIST = [
@@ -42,28 +44,39 @@ COLOUR_LIST = [
 LABEL_RE = re.compile(r"(i|b)?([0-9]+)?!!(.*)")
 
 
-def parse_label(label: str) -> (str, int, str):
+def parse_label(label: str) -> Tuple[str | None, int | None, str]:
+    """
+    _summary_
+
+    :param label: _description_
+    :type label: str
+    :raises ValueError: _description_
+    :raises ValueError: _description_
+    :return: _description_
+    :rtype: Tuple[str | None, int | None, str]
+    """
     match = LABEL_RE.match(label)
+    _colourindex: int | None = None
+    font, colourindex, name = (None, None, label)
+
     if match:
         font, colourindex, name = match.groups()
-    else:
-        font, colourindex, name = (None, None, label)
 
     if "!!" in label and not font and not colourindex:
         raise ValueError(f'Bad label "{label}". Should look like "b7!!E12345".')
 
-    if colourindex:
-        colourindex = int(colourindex)
-        if not 1 <= colourindex <= len(COLOUR_LIST) - 1:
+    if colourindex and colourindex.isnumeric():
+        _colourindex = int(colourindex)
+        if not 1 <= _colourindex <= len(COLOUR_LIST) - 1:
             raise ValueError(
                 f'Bad colour index in "{label}". '
                 + f"Expecting a number between 1 and {len(COLOUR_LIST) - 1}"
             )
 
-    return (font, colourindex, name)
+    return (font, _colourindex, name)
 
 
-def get_result_dimensions(result: dict) -> (int, int):
+def get_result_dimensions(result: dict[str, Any]) -> Tuple[int, int]:
     """Returns the width and the height of exported tree image."""
 
     get_x2 = lambda m: m[2]
@@ -74,8 +87,27 @@ def get_result_dimensions(result: dict) -> (int, int):
 
 
 def export_tree(
-    t: ete3.Tree, output_path: str, title: str, variable_height: bool = False
-):
+    t: ete3.Tree,
+    output_path: str,
+    title: str | None = None,
+    variable_height: bool = False,
+) -> dict[str, Any]:
+    """
+    Exports tree to a file
+
+    :param t: ...
+    :type t: ete3.Tree
+    :param output_path: ...
+    :type output_path: str
+    :param title: Title rendered on output
+    :type title: str | None
+    :param variable_height: If set to true the page will be sized to fit the
+    tree, otherwise the tree will be resized to fit a 8.5x11" page,
+    defaults to False
+    :type variable_height: bool, optional
+    :return: ...
+    :rtype: None
+    """
     ts = ete3.TreeStyle()
     ts.show_leaf_name = False
     ts.margin_left = 15
@@ -84,9 +116,10 @@ def export_tree(
     ts.min_leaf_separation = 0
 
     w = 8.5
-    h = 11 if not variable_height else None
+    h: int | None = None
 
     if not variable_height:
+        h = 11
         # Here we are adjusting the tree width to maintain the aspect ratio.
         # To do this we get the desired aspect ratio (var_h/var_w)
         # by generating a variable-height output image,
@@ -119,6 +152,15 @@ def interpolate(start: float, end: float, t: float) -> float:
 
 
 def get_optimal_font_size(t: ete3.Tree) -> int:
+    """
+    Performs a calculation for the best font size with respect to the number of
+    leaves in the tree
+
+    :param t: ...
+    :type t: ete3.Tree
+    :return: ...
+    :rtype: int
+    """
     leaf_count = sum(1 for _ in t.iter_leaves())
     t = min(1, leaf_count / 120)
     return round(interpolate(12, 4, t))
@@ -166,13 +208,22 @@ def process_tree_labels(t: ete3.Tree) -> None:
 
 
 def load_tree(input_path: str) -> ete3.Tree:
+    """
+    Load a tree into an ete3.Tree object.
+
+    :param input_path: Can be either a file or a string containing the same
+    information. For example `(A,B,C);`
+    :type input_path: str
+    :return: ...
+    :rtype: ete3.Tree
+    """
     t = ete3.Tree(input_path)
     reverse_tree(t)  # TODO: make sure this is still required.
     process_tree_labels(t)
     return t
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Tree maker script. Produces pretty PDFs."
     )
@@ -196,4 +247,3 @@ def main():
         exit(1)
 
     export_tree(t, args.output_path, args.title)
-

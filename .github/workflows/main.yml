@@ -2,11 +2,37 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "devel" ]
+    branches: ["main", "devel"]
   pull_request:
-    branches: [ "main", "devel" ]
+    branches: ["main", "devel"]
 
 jobs:
+  run:
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - if: matrix.python-version == '3.9' && runner.os == 'Linux'
+        name: Lint
+        run: hatch run lint:all
+
+      - name: Run tests and track code coverage
+        run: hatch run cov
   build:
     runs-on: ubuntu-latest
     steps:
@@ -15,7 +41,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip
-          sudo apt-get install -y libgl-dev python3-pyqt5 python3-pyqt5.qtopengl python3-pyqt5.qtsvg
 
       - name: Run build
         run: |
@@ -23,24 +48,19 @@ jobs:
 
       - name: Run test
         run: |
-          pip3 install ".[testing]"
-          pip3 install pytest-cov
-          pytest -v \
-            --junitxml=report.xml \
-            --cov=make_tree tests/ \
-            --cov-report=term-missing:skip-covered \
-            | tee coverage.txt
+          pip3 install ".[test]"
+          pytest --junitxml=unit_test.xml --cov-report xml
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
           path: |
-            report.xml
-            coverage.txt
+            unit_test.xml
+            coverage.xml
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
-          pytest-coverage-path: coverage.txt
-          junitxml-path: report.xml
+          pytest-xml-coverage-path: coverage.xml
+          junitxml-path: unit_test.xml

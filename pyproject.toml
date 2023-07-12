@@ -1,0 +1,130 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "make_tree"
+description = 'Simple script for drawing phylogenetic trees'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "GPL-3.0"
+keywords = ["ete3", "tree maker", "pdf"]
+authors = [
+  { name = "Vitaliy Mysak", email = "vmysak@bccfe.ca" },
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "ete3",
+  "numpy",
+  "six",
+  "pyqt5"
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-html",
+]
+
+[project.urls]
+Documentation = "https://github.com/cfe-lab/make_tree#readme"
+Issues = "https://github.com/cfe-lab/make_tree/issues"
+Source = "https://github.com/cfe-lab/make_tree"
+
+[project.scripts]
+make_tree = "make_tree.entrypoint:main"
+
+[tool.hatch.version]
+path = "make_tree/__about__.py"
+
+[tool.hatch.build]
+exclude = [
+  "tests",
+]
+skip-excluded-dirs = true
+directory = "output"
+
+[tool.hatch.build.targets.wheel]
+packages = ["make_tree"]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "ete3",
+  "numpy",
+  "six"
+]
+
+[tool.hatch.envs.test]
+template = "default"
+extra-dependencies = [
+  "pytest",
+  "pytest-cov",
+  "pytest-html",
+]
+
+[tool.hatch.envs.dev]
+template = "test"
+extra-dependencies = [
+  "pytest",
+  "pytest-cov",
+  "pytest-html",
+  "mypy",
+  "mypy-extensions",
+  "black",
+  "isort"
+]
+
+[tool.hatch.envs.test.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
+cov-report = "pytest --cov-report xml --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
+ci-report = "pytest --junitxml=unit_test.xml --cov-report xml:coverage.xml --cov-report term --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
+full-report = "pytest --junitxml=unit_test.xml --html=test_report.html --self-contained-html --cov-report xml:coverage.xml --cov-report term --cov-report html --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
+no-cov = "cov --no-cov {args}"
+
+[[tool.hatch.envs.test.matrix]]
+python = ["38", "39", "310", "311"]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+minversion = "6.0"
+addopts = "-ra --cov --cov-report xml"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+  "**/__init__.py",
+  "**/__about__.py",
+  "**/entrypoint.py",
+  "tests/*.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.pydocstyle]
+match = "**/*.py"
+
+[tool.mypy]
+ignore_missing_imports = true
