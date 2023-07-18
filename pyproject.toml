@@ -28,7 +28,7 @@ dependencies = [
   "ete3",
   "numpy",
   "six",
-  "pyqt5"
+  "PyQt5",
 ]
 
 dynamic = ["version"]

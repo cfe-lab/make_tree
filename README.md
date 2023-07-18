@@ -35,6 +35,8 @@ Test with `hatch env run -e test cov`
 
 > **Note:** tree_maker requires trees be generated from [Clustal](http://www.clustal.org/)!
 
+> **IMPORTANT:** You will need `libgl1` to use this, `apt install libgl1` for Debian based systems.
+
 To use Tree Maker, run the following command:
 
 ```shell
