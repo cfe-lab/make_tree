@@ -65,42 +65,7 @@ directory = "output"
 [tool.hatch.build.targets.wheel]
 packages = ["make_tree"]
 
-[tool.hatch.envs.default]
-dependencies = [
-  "ete3",
-  "numpy",
-]
 
-[tool.hatch.envs.test]
-template = "default"
-extra-dependencies = [
-  "pytest",
-  "pytest-cov",
-  "pytest-html",
-]
-
-[tool.hatch.envs.dev]
-template = "test"
-extra-dependencies = [
-  "ruff",
-  "mypy==1.9.0",
-]
-
-[tool.hatch.envs.dev.scripts]
-lint = "ruff check {args:.}"
-format = "ruff format {args:.}"
-format-check = "ruff format --check {args:.}"
-typecheck = "mypy {args:make_tree tests}"
-
-[tool.hatch.envs.test.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
-cov-report = "pytest --cov-report xml --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
-ci-report = "pytest --junitxml=unit_test.xml --cov-report xml:coverage.xml --cov-report term --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
-full-report = "pytest --junitxml=unit_test.xml --html=test_report.html --self-contained-html --cov-report xml:coverage.xml --cov-report term --cov-report html --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
-no-cov = "cov --no-cov {args}"
-
-[[tool.hatch.envs.test.matrix]]
-python = ["38", "39", "310", "311"]
 
 [tool.pytest.ini_options]
 pythonpath = "."

@@ -14,16 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.11"
 
-      - name: Install Hatch
-        run: pip install --upgrade hatch
+      - name: Install dependencies
+        run: uv sync --extra dev
 
       - name: Check formatting
-        run: hatch env run --env dev format-check
+        run: uv run ruff format --check
 
       - name: Run linter
-        run: hatch env run --env dev lint
+        run: uv run ruff check

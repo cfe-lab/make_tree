@@ -19,28 +19,48 @@ Tree Maker is a Python script that allows you to create and visualize phylogenet
 
 ```shell
 git clone https://github.com/cfe-lab/make_tree.git
-pip install  .
+uv pip install .
 ```
 
 #### Option 2: Install directly from the repository
 
 ```shell
-pip install git+https://github.com/cfe-lab/make_tree
+uv pip install git+https://github.com/cfe-lab/make_tree
 ```
 
 #### Development
 
-For development dependencies use [hatch](https://github.com/pypa/hatch).
+Use [uv](https://github.com/astral-sh/uv) to manage the environment.
 
-Activate an environment with `hatch env create [dev|test]`.
+Install all dev dependencies:
 
-Test with `hatch env run -e test cov`
+```shell
+uv sync --extra test --extra dev
+```
 
-Lint with `hatch env run -e dev lint`
+Test:
 
-Format with `hatch env run -e dev format`
+```shell
+uv run pytest
+```
 
-Type-check with `hatch env run -e dev typecheck`
+Lint:
+
+```shell
+uv run ruff check
+```
+
+Format:
+
+```shell
+uv run ruff format
+```
+
+Type-check:
+
+```shell
+uv run mypy make_tree tests
+```
 
 # Usage
 
