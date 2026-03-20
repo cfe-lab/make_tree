@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from ete3.parser.newick import NewickError
+from ete4.parser.newick import NewickError
 
 from .make_tree import export_tree, load_tree
 

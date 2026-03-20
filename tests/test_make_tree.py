@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from typing import Optional, Tuple
 
-import ete3
 import pytest
+from ete4 import Tree
 
 from make_tree.make_tree import (
     export_tree,
@@ -46,10 +46,12 @@ def test_parse_label_errors(input: str) -> None:
     ],
     ids=["Empty Tree", "One Node", "Three Node", "Six Node"],
 )
-def test_reverse_tree(tree_input, expected_output):
-    t = ete3.Tree(tree_input)
+def test_reverse_tree(
+    tree_input: Optional[str], expected_output: Optional[str]
+) -> None:
+    t = Tree(tree_input) if tree_input is not None else Tree()
     reverse_tree(t)
-    expected = ete3.Tree(expected_output)
+    expected = Tree(expected_output) if expected_output is not None else Tree()
     assert str(t) == str(expected)
 
 
@@ -61,18 +63,18 @@ def test_interpolate(a: float, b: float, c: float, exp_output: float) -> None:
     assert interpolate(a, b, c) == exp_output
 
 
-def test_get_optimal_font_size_small_tree():
-    t = ete3.Tree("(A,B,C);")
+def test_get_optimal_font_size_small_tree() -> None:
+    t = Tree("(A,B,C);")
     assert get_optimal_font_size(t) > 8
 
 
-def test_get_optimal_font_size_big_tree():
-    t = ete3.Tree("(" + "A,B,C" * 100 + ");")
+def test_get_optimal_font_size_big_tree() -> None:
+    t = Tree("(" + "A,B,C" * 100 + ");")
     assert get_optimal_font_size(t) < 8
 
 
-def test_process_tree_labels_idempotent():
-    t = ete3.Tree("(A,B,(C,D),E);")
+def test_process_tree_labels_idempotent() -> None:
+    t = Tree("(A,B,(C,D),E);")
     process_tree_labels(t)
     s1 = str(t)
     process_tree_labels(t)
@@ -84,7 +86,7 @@ def test_process_tree_labels_idempotent():
     "tree_str", ["(A,B,(C,REF_ROOT),E);", "(A,B,(C,REF_ROOT_HIDE),E);"]
 )
 def test_process_tree_labels_reroots(tree_str: str) -> None:
-    t = ete3.Tree(tree_str)
+    t = Tree(tree_str)
     s1 = str(t)
     process_tree_labels(t)
     s2 = str(t)
@@ -92,7 +94,7 @@ def test_process_tree_labels_reroots(tree_str: str) -> None:
 
 
 def test_export(tmp_path: Path) -> None:
-    t = ete3.Tree("(A,B,(C,D),E);")
+    t = Tree("(A,B,(C,D),E);")
     output_path = os.path.join(tmp_path, "output.pdf")
     result = export_tree(t, output_path, "my title")
     assert isinstance(result, dict)
@@ -109,7 +111,7 @@ def test_export(tmp_path: Path) -> None:
     ],
 )
 def test_load_tree(input: str) -> None:
-    t1 = ete3.Tree(input)
+    t1 = Tree(input)
 
     t2 = load_tree(input)
 
