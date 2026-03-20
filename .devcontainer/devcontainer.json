@@ -12,6 +12,11 @@
     "ghcr.io/devcontainers/features/git:1": {}
   },
 
+  // Mount the source code as a volume to allow live editing and debugging:
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cached"
+  ],
+
   // Re-sync after VS Code mounts the live source tree over /app
   "postCreateCommand": "uv sync --all-extras",
 
