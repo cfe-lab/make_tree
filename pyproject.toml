@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
   "ete3",
   "numpy",
+  "six",
   "PyQt5",
 ]
 
