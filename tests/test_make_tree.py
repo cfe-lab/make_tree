@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Tuple, Optional
+from typing import Tuple, Optional
 
 import ete3
 import pytest
