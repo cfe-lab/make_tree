@@ -7,8 +7,13 @@
   },
   "workspaceFolder": "/app",
 
+  // Install git for the vscode:
+  "features": {
+    "git": "latest"
+  },
+
   // Re-sync after VS Code mounts the live source tree over /app
-  "postCreateCommand": "apt-get update -y && apt-get install -y git && uv sync --all-extras",
+  "postCreateCommand": "uv sync --all-extras",
 
   "customizations": {
     "vscode": {
