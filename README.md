@@ -66,8 +66,6 @@ uv run mypy make_tree tests
 
 > **Note:** tree_maker requires trees be generated from [Clustal](http://www.clustal.org/)!
 
-> **IMPORTANT:** You will need `libgl1` to use this, `apt install libgl1` for Debian based systems.
-
 To use Tree Maker, run the following command:
 
 ```shell

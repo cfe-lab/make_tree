@@ -1,8 +1,8 @@
 from .make_tree import (
     COLOUR_LIST,
+    TreeParseError,
     export_tree,
     get_optimal_font_size,
-    get_result_dimensions,
     interpolate,
     load_tree,
     parse_label,
@@ -12,9 +12,9 @@ from .make_tree import (
 
 __all__ = [
     "COLOUR_LIST",
+    "TreeParseError",
     "export_tree",
     "get_optimal_font_size",
-    "get_result_dimensions",
     "interpolate",
     "load_tree",
     "parse_label",

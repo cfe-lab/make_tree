@@ -14,9 +14,16 @@ Global Variables:
 
 import os
 import re
-from typing import Any, Dict, Optional, Tuple
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
-from ete4 import Tree  # Tree drawing library
+import toytree
+import toytree.mod
+import toyplot
+import toyplot.reportlab
+import toyplot.reportlab.pdf
+import toyplot.svg
+import reportlab.pdfgen.canvas as _rl_canvas
 
 COLOUR_LIST = [
     "#000000",
@@ -41,16 +48,28 @@ COLOUR_LIST = [
 
 LABEL_RE = re.compile(r"(i|b)?([0-9]+)?!!(.*)")
 
+# SVG namespace used by toyplot
+_SVG_NS = "http://www.w3.org/2000/svg"
+
+
+class TreeParseError(Exception):
+    """Raised when a Newick string or file cannot be parsed as a tree."""
+
 
 def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
-    """
-    _summary_
+    """Parse a node label encoding font style, colour index and display text.
 
-    :param label: _description_
+    Labels may optionally carry a font flag (``i`` or ``b``) and a numeric
+    colour index from :data:`COLOUR_LIST`, separated from the actual display
+    text by ``!!``.  Examples: ``test``, ``i!!test``, ``b2!!test``.
+
+    :param label: Raw node name string.
     :type label: str
-    :raises ValueError: _description_
-    :raises ValueError: _description_
-    :return: _description_
+    :raises ValueError: If the label contains ``!!`` but is not well-formed.
+    :raises ValueError: If the colour index is out of range.
+    :return: ``(font_flag, colour_index, display_text)`` where *font_flag* is
+        ``"i"``, ``"b"``, or ``None``; *colour_index* is an ``int`` or
+        ``None``.
     :rtype: Tuple[str | None, int | None, str]
     """
     match = LABEL_RE.match(label)
@@ -74,191 +93,249 @@ def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
     return (font, _colourindex, name)
 
 
-def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
-    """Returns the rendered pixel width and height from an export_tree result dict."""
-    w = max(m[2] for m in result["node_areas"].values())
-    h = max(m[3] for m in result["node_areas"].values())
-    return (w, h)
-
-
-def _probe_scene_size(t: Tree, ts: Any) -> Tuple[float, float]:
-    """Return the (width, height) of the tree scene built in memory.
-
-    Builds the full Qt scene (with all faces already applied) without writing
-    any file, then reads ``scene.sceneRect()``.
-
-    The relationship between ``ts.tree_width`` and scene width is exactly linear
-    with a slope of 1 and a positive intercept driven by label widths and margins::
-
-        scene_width = ts.tree_width + fixed_width
-
-    This means the correction to ``ts.tree_width`` needed to hit a target scene
-    width is simply an additive delta — no ratio multiplication required, and the
-    result is exact regardless of label length.
-    """
-    from ete4.treeview import drawer as _drawer
-    from ete4.treeview.qt_render import render as _qt_render
-
-    # render_tree also assigns _nid; mirror that here so the probe is identical
-    for nid, n in enumerate(t.traverse("preorder")):
-        n.add_prop("_nid", nid)
-
-    scene, img = _drawer.init_scene(t, None, ts)
-    tree_item, n2i, n2f = _qt_render(t, img)
-    scene.init_values(t, img, n2i, n2f)
-    tree_item.setParentItem(scene.master_item)
-    scene.master_item.setPos(0, 0)
-    scene.addItem(scene.master_item)
-
-    sr = scene.sceneRect()
-    return sr.width(), sr.height()
-
-
-def export_tree(
-    t: Tree,
-    output_path: str,
-    title: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Exports tree to a letter-size (8.5×11") PDF.
-
-    The tree is scaled horizontally so that its natural aspect ratio matches
-    the page, preventing any distortion when Qt renders into fixed dimensions.
-    The ratio is probed by building the Qt scene in memory (no file I/O) and
-    reading ``scene.sceneRect()`` before the single final render.
-
-    :param t: Tree to render.
-    :type t: Tree
-    :param output_path: Destination file path (PDF recommended).
-    :type output_path: str
-    :param title: Optional title drawn at the top of the page.
-    :type title: str | None
-    :return: ete4 image-map dict with ``node_areas``, ``nodes``, and ``faces``.
-    :rtype: Dict[str, Any]
-    """
-    from ete4.treeview import TextFace, TreeStyle
-    from ete4.treeview import drawer as _drawer
-
-    # PyQt6 requires this on headless servers.
-    # More info: https://github.com/NVlabs/instant-ngp/discussions/300#discussioncomment-4814215
-    os.environ["QT_QPA_PLATFORM"] = "offscreen"
-
-    ts = TreeStyle()
-    ts.show_leaf_name = False
-    ts.margin_left = 15
-    ts.margin_right = 15
-    ts.branch_vertical_margin = -2  # only affects trees with many leaves
-    ts.min_leaf_separation = 0
-
-    if title:
-        ts.title.add_face(TextFace(title, fsize=12, bold=True), column=0)
-
-    # Apply visual styles once, before probing — the probe must see the same
-    # faces that the final render will use so the ratio measurement is accurate.
-    _apply_node_styles(t)
-
-    # Probe the natural scene dimensions in memory (no file write).
-    # When both w and h are fixed, ete4 uses IgnoreAspectRatio, which distorts
-    # the tree if its intrinsic ratio differs from the target page ratio.
-    # Since scene_width = ts.tree_width + fixed_width (slope == 1, exactly),
-    # the required correction is a plain additive delta — no ratio multiply needed.
-    PAGE_W, PAGE_H = 8.5, 11.0
-    scene_w, scene_h = _probe_scene_size(t, ts)
-    target_scene_w = scene_h * PAGE_W / PAGE_H
-    ts.tree_width += target_scene_w - scene_w
-
-    return _drawer.render_tree(
-        t, output_path, w=PAGE_W, h=PAGE_H, units="in", tree_style=ts
-    )
-
-
-def reverse_tree(node: Tree) -> None:
-    node.children = node.children[::-1]
-    for child in node.children:
-        reverse_tree(child)
-
-
 def interpolate(start: float, end: float, t: float) -> float:
     """For t between 0 and 1, returns a number between start and end."""
     return (1 - t) * start + end * t
 
 
-def get_optimal_font_size(t: Tree) -> int:
-    """
-    Performs a calculation for the best font size with respect to the number of
-    leaves in the tree
+def get_optimal_font_size(t: toytree.ToyTree) -> int:
+    """Return an appropriate font size for the number of leaves in *t*.
 
-    :param t: ...
-    :type t: Tree
-    :return: ...
+    :param t: Tree to size labels for.
+    :type t: toytree.ToyTree
+    :return: Font size in points.
     :rtype: int
     """
-    leaf_count = sum(1 for _ in t.leaves())
+    leaf_count = t.ntips
     x = min(1, leaf_count / 120)
     return round(interpolate(12, 4, x))
 
 
-def process_tree_labels(t: Tree) -> None:
-    # Some edge lengths can be negative.
-    # For those cases we follow instructions from http://www.icp.ucl.ac.be/~opperd/private/neighbor.html
+def _reverse_node(node: "toytree.Node") -> None:
+    """Recursively reverse the children tuple of *node* in place."""
+    node._children = node._children[::-1]
+    for child in node._children:
+        _reverse_node(child)
+
+
+def reverse_tree(t: toytree.ToyTree) -> None:
+    """Recursively reverse the child order of every node in *t*.
+
+    Modifies *t* in place.  The resulting tip order is the reverse of the
+    original parse order, preserving the historical ordering behaviour.
+
+    :param t: Tree to reverse.
+    :type t: toytree.ToyTree
+    """
+    _reverse_node(t.treenode)
+    t._update()
+
+
+def process_tree_labels(t: toytree.ToyTree) -> toytree.ToyTree:
+    """Normalise negative branch lengths and apply REF_ROOT semantics.
+
+    Steps performed (in order):
+
+    1. For any node with a negative ``dist``, shift ``abs(dist)`` onto each
+       sibling edge and zero the negative edge.
+    2. If any node name contains ``REF_ROOT`` or ``REF_ROOT_HIDE``, reroot
+       the tree on that node.
+    3. If any node name contains ``REF_ROOT_HIDE``, drop that tip from the
+       tree and clean up any resulting unary nodes.
+
+    Because rerooting and tip-removal return new :class:`toytree.ToyTree`
+    objects, always use the *returned* tree rather than the argument.
+
+    :param t: Tree to preprocess.
+    :type t: toytree.ToyTree
+    :return: Preprocessed tree (may be a new object if rerooted/pruned).
+    :rtype: toytree.ToyTree
+    """
+    # Fix negative branch lengths
     for node in t.traverse():
         if node.dist is not None and node.dist < 0:
             d = abs(node.dist)
-            for c in node.up.children:
-                c.dist = (c.dist or 0) + d
-            node.dist = 0
+            for sibling in node.up.children:
+                sibling._dist = (sibling.dist or 0) + d
+            node._dist = 0.0
+    t._update()
 
-    # Sometimes the tree root can be moved to a chosen node.
-    # It is signified by the label "REF_ROOT" or "REF_ROOT_HIDE".
+    # Reroot on the first node whose name contains REF_ROOT or REF_ROOT_HIDE
     for node in t.traverse():
-        if node.name and ("REF_ROOT" in node.name or "REF_ROOT_HIDE" in node.name):
-            t.set_outgroup(node)
+        if node.name and (
+            "REF_ROOT" in node.name or "REF_ROOT_HIDE" in node.name
+        ):
+            t = t.root(node.name)
+            break
 
-    # Node with label "REF_ROOT_HIDE" must not be visible on the resulting picture.
-    # We simply remove it from the tree. It is not expected to be the actual tree root.
+    # Drop the REF_ROOT_HIDE tip and clean up any resulting unary nodes
     for node in t.traverse():
-        if node.name and "REF_ROOT_HIDE" in node.name and node.up:
-            node.up.children.remove(node)
+        if node.name and "REF_ROOT_HIDE" in node.name and node.is_leaf():
+            t = toytree.mod.drop_tips(t, node.name)
+            t = toytree.mod.remove_unary_nodes(t)
+            break
+
+    return t
 
 
-def _apply_node_styles(t: Tree) -> None:
-    """Apply visual styles (TextFace, NodeStyle) to all nodes. Requires PyQt6."""
-    from ete4.treeview import NodeStyle, TextFace
+def _collect_node_styles(t: toytree.ToyTree) -> List[Dict]:
+    """Return a list of style dicts for every node in idx order.
+
+    Each dict has keys: ``text`` (display string), ``color`` (hex),
+    ``bold`` (bool), ``italic`` (bool).
+    """
+    result = []
+    for node in t[:]:  # idx-ordered slice
+        if node.name:
+            font, ci, text = parse_label(node.name)
+        else:
+            font, ci, text = None, None, ""
+        result.append(
+            {
+                "text": text,
+                "color": COLOUR_LIST[ci or 0],
+                "bold": font == "b",
+                "italic": font == "i",
+            }
+        )
+    return result
+
+
+def _apply_italic_to_svg(svg_elem, italic_texts: set) -> None:
+    """Inject ``font-style:italic`` into matching ``<text>`` SVG elements.
+
+    toyplot's style validator rejects ``font-style``, so italic must be
+    applied via direct XML manipulation after the element tree is built.
+    The reportlab renderer honours ``font-style:italic`` in element ``style``
+    attributes, producing correctly italicised PDF output.
+    """
+    for text_elem in svg_elem.iter(f"{{{_SVG_NS}}}text"):
+        if text_elem.text in italic_texts:
+            existing = text_elem.get("style", "")
+            if existing:
+                text_elem.set("style", existing + ";font-style:italic")
+            else:
+                text_elem.set("style", "font-style:italic")
+
+
+def export_tree(
+    t: toytree.ToyTree,
+    output_path: str,
+    title: Optional[str] = None,
+) -> None:
+    """Export *t* to a letter-size (8.5 x 11 in) PDF.
+
+    Renders a rectangular phylogram with per-node label colours and
+    bold/italic styling derived from the :func:`parse_label` encoding.
+    All named nodes — tips and internal — receive labels.
+
+    PDF output uses toyplot and reportlab; no Qt or PyQt dependency is
+    required.  SVG output is also supported when *output_path* ends with
+    ``.svg``.
+
+    :param t: Preprocessed tree to render.
+    :type t: toytree.ToyTree
+    :param output_path: Destination file path (PDF or SVG).
+    :type output_path: str
+    :param title: Optional title drawn above the tree.
+    :type title: str | None
+    :return: None
+    """
+    # Letter size: 8.5 x 11 inches expressed as points (1 pt = 1/72 in)
+    PAGE_W, PAGE_H = 612.0, 792.0
 
     fsize = get_optimal_font_size(t)
-    for node in t.traverse():
-        (font, colourindex, name) = (
-            parse_label(node.name) if node.name else (None, None, "")
+    node_styles = _collect_node_styles(t)
+    nnodes = t.nnodes
+
+    # Group nodes by (bold, italic, color) — one add_node_labels() per group
+    groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(
+        list
+    )
+    for idx, info in enumerate(node_styles):
+        if info["text"]:
+            key = (info["bold"], info["italic"], info["color"])
+            groups[key].append((idx, info["text"]))
+
+    italic_texts: set = set()
+
+    # Draw the tree onto a letter-sized canvas
+    canvas, axes, mark = t.draw(
+        layout="r",
+        width=PAGE_W,
+        height=PAGE_H,
+        node_sizes=0,
+        node_mask=True,
+        tip_labels=False,
+        label=title or "",
+    )
+
+    # Add per-node labels, one call per unique (bold, italic, color) group
+    for (bold, italic, color), node_list in groups.items():
+        labels: List[str] = [""] * nnodes
+        mask: List[bool] = [False] * nnodes  # False = hidden by default
+        for idx, text in node_list:
+            labels[idx] = text
+            mask[idx] = True  # True = show
+            if italic:
+                italic_texts.add(text)
+
+        style = {"font-weight": "bold"} if bold else None
+        t.annotate.add_node_labels(
+            axes,
+            labels,
+            mask=mask,
+            color=color,
+            font_size=fsize,
+            style=style,
         )
-        colour = COLOUR_LIST[colourindex or 0]
 
-        bold = font == "b"
-        fstyle = "italic" if font == "i" else "normal"
-        face = TextFace(name, fgcolor=colour, bold=bold, fstyle=fstyle, fsize=fsize)
-        nstyle = NodeStyle()
-        nstyle["size"] = 0
-        nstyle["hz_line_width"] = 1
-        nstyle["vt_line_width"] = 1
+    is_pdf = output_path.lower().endswith(".pdf")
 
-        node.set_style(nstyle)
-        node.add_face(face, column=0)
+    # Obtain the SVG element for post-processing (italic) and/or PDF render
+    svg_elem = toyplot.svg.render(canvas)
+    if italic_texts:
+        _apply_italic_to_svg(svg_elem, italic_texts)
 
-
-def load_tree(input_path: str) -> Tree:
-    """
-    Load a tree into a Tree object.
-
-    :param input_path: Can be either a file path or a newick string.
-    For example `(A,B,C);`
-    :type input_path: str
-    :return: ...
-    :rtype: Tree
-    """
-    if os.path.isfile(input_path):
-        with open(input_path) as f:
-            t = Tree(f)
+    if is_pdf:
+        surface = _rl_canvas.Canvas(output_path, pagesize=(PAGE_W, PAGE_H))
+        surface.translate(0, PAGE_H)
+        surface.scale(1, -1)
+        toyplot.reportlab.render(svg_elem, surface)
+        surface.showPage()
+        surface.save()
     else:
-        t = Tree(input_path)
+        # SVG and other formats: serialize the (possibly italic-patched) tree
+        import xml.etree.ElementTree as ET
+
+        ET.register_namespace("", _SVG_NS)
+        ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+        ET.register_namespace("toyplot", "http://www.sandia.gov/toyplot")
+        ET.ElementTree(svg_elem).write(
+            output_path, xml_declaration=True, encoding="utf-8"
+        )
+
+
+def load_tree(input_path: str) -> toytree.ToyTree:
+    """Load a tree from a file path or a raw Newick string.
+
+    After parsing, the tree is preprocessed by :func:`reverse_tree` and
+    :func:`process_tree_labels`.
+
+    :param input_path: Either a path to a Newick file or a Newick string
+        such as ``"(A,B,C);"``
+    :type input_path: str
+    :raises TreeParseError: If the input cannot be parsed as a valid tree.
+    :return: Loaded and preprocessed tree.
+    :rtype: toytree.ToyTree
+    """
+    try:
+        t = toytree.tree(input_path)
+    except Exception as exc:
+        raise TreeParseError(
+            f"Could not parse tree from {input_path!r}: {exc}"
+        ) from exc
+
     reverse_tree(t)
-    process_tree_labels(t)
+    t = process_tree_labels(t)
     return t
