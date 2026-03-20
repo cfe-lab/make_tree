@@ -1,0 +1,29 @@
+{
+  "name": "make_tree",
+  "build": {
+    // Paths are relative to this .devcontainer/ directory
+    "context": "..",
+    "dockerfile": "../Dockerfile"
+  },
+  "workspaceFolder": "/app",
+
+  // Re-sync after VS Code mounts the live source tree over /app
+  "postCreateCommand": "uv sync --extra dev",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.mypy-type-checker",
+        "charliermarsh.ruff"
+      ]
+    }
+  }
+}
