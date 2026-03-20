@@ -75,72 +75,93 @@ def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
 
 
 def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
-    """Returns the width and the height of exported tree image."""
-
+    """Returns the rendered pixel width and height from an export_tree result dict."""
     w = max(m[2] for m in result["node_areas"].values())
     h = max(m[3] for m in result["node_areas"].values())
     return (w, h)
+
+
+def _natural_scene_ratio(t: Tree, ts: Any) -> float:
+    """Return the natural height/width ratio of the tree scene built in memory.
+
+    Builds the full Qt scene (with all faces already applied) without writing
+    any file, then reads ``scene.sceneRect()`` for the intrinsic dimensions.
+    This is used to adjust ``ts.tree_width`` before the real render so that
+    Qt's ``IgnoreAspectRatio`` stretch (applied when both w and h are fixed)
+    does not distort the tree.
+    """
+    from ete4.treeview import drawer as _drawer
+    from ete4.treeview.qt_render import render as _qt_render
+
+    # render_tree also assigns _nid; mirror that here so the probe is identical
+    for nid, n in enumerate(t.traverse("preorder")):
+        n.add_prop("_nid", nid)
+
+    scene, img = _drawer.init_scene(t, None, ts)
+    tree_item, n2i, n2f = _qt_render(t, img)
+    scene.init_values(t, img, n2i, n2f)
+    tree_item.setParentItem(scene.master_item)
+    scene.master_item.setPos(0, 0)
+    scene.addItem(scene.master_item)
+
+    sr = scene.sceneRect()
+    return sr.height() / sr.width()
 
 
 def export_tree(
     t: Tree,
     output_path: str,
     title: Optional[str] = None,
-    variable_height: bool = False,
 ) -> Dict[str, Any]:
     """
-    Exports tree to a file
+    Exports tree to a letter-size (8.5×11") PDF.
 
-    :param t: ...
+    The tree is scaled horizontally so that its natural aspect ratio matches
+    the page, preventing any distortion when Qt renders into fixed dimensions.
+    The ratio is probed by building the Qt scene in memory (no file I/O) and
+    reading ``scene.sceneRect()`` before the single final render.
+
+    :param t: Tree to render.
     :type t: Tree
-    :param output_path: ...
+    :param output_path: Destination file path (PDF recommended).
     :type output_path: str
-    :param title: Title rendered on output
+    :param title: Optional title drawn at the top of the page.
     :type title: str | None
-    :param variable_height: If set to true the page will be sized to fit the
-    tree, otherwise the tree will be resized to fit a 8.5x11" page,
-    defaults to False
-    :type variable_height: bool, optional
-    :return: ...
+    :return: ete4 image-map dict with ``node_areas``, ``nodes``, and ``faces``.
     :rtype: Dict[str, Any]
     """
     from ete4.treeview import TextFace, TreeStyle
     from ete4.treeview import drawer as _drawer
 
+    # PyQt6 requires this on headless servers.
+    # More info: https://github.com/NVlabs/instant-ngp/discussions/300#discussioncomment-4814215
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
     ts = TreeStyle()
     ts.show_leaf_name = False
     ts.margin_left = 15
     ts.margin_right = 15
-    ts.branch_vertical_margin = -2  # This only affects trees with many leaves
+    ts.branch_vertical_margin = -2  # only affects trees with many leaves
     ts.min_leaf_separation = 0
-
-    w = 8.5
-    h: Optional[int] = None
-
-    if not variable_height:
-        h = 11
-        # Here we are adjusting the tree width to maintain the aspect ratio.
-        # To do this we get the desired aspect ratio (var_h/var_w)
-        # by generating a variable-height output image,
-        # and divide it by the required one (h/w)
-        # to get the "stretch factor".
-        var = export_tree(t, output_path, title, variable_height=True)
-        var_w, var_h = get_result_dimensions(var)
-        ts.tree_width *= (var_h / var_w) / (h / w)
 
     if title:
         ts.title.add_face(TextFace(title, fsize=12, bold=True), column=0)
 
-    # The ete4 library uses PyQt6, which only works on servers
-    # with physical screens, unless the following option is used:
-    # More info: https://github.com/NVlabs/instant-ngp/discussions/300#discussioncomment-4814215
-    os.environ["QT_QPA_PLATFORM"] = "offscreen"
-
+    # Apply visual styles once, before probing — the probe must see the same
+    # faces that the final render will use so the ratio measurement is accurate.
     _apply_node_styles(t)
-    result: Dict[str, Any] = _drawer.render_tree(
-        t, output_path, w=w, h=h, units="in", tree_style=ts
+
+    # Probe the natural scene ratio in memory (no file write).
+    # When both w and h are fixed, ete4 uses IgnoreAspectRatio, which distorts
+    # the tree if its intrinsic ratio differs from the target page ratio.
+    # Adjusting tree_width makes the two ratios match, so the stretch is neutral.
+    PAGE_W, PAGE_H = 8.5, 11.0
+    natural_ratio = _natural_scene_ratio(t, ts)
+    ts.tree_width *= natural_ratio / (PAGE_H / PAGE_W)
+
+    return _drawer.render_tree(
+        t, output_path, w=PAGE_W, h=PAGE_H, units="in", tree_style=ts
     )
-    return result
 
 
 def reverse_tree(node: Tree) -> None:
