@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import ete3
 import pytest
@@ -24,12 +24,12 @@ from make_tree.make_tree import (
         ("b2!!test", ("b", 2, "test")),
     ],
 )
-def test_parse_label_basic(input: str, exp_output: Tuple[Optional[str], Optional[int], str]):
+def test_parse_label_basic(input: str, exp_output: Tuple[Optional[str], Optional[int], str]) -> None:
     assert parse_label(input) == exp_output
 
 
 @pytest.mark.parametrize("input", ["!!test", "b0!!test", "z2!!test", "b100!!test"])
-def test_parse_label_errors(input: str):
+def test_parse_label_errors(input: str) -> None:
     with pytest.raises(ValueError):
         parse_label(input)
 
@@ -55,7 +55,7 @@ def test_reverse_tree(tree_input, expected_output):
     "a, b, c, exp_output",
     [(0, 10, 0.5, 5.0), (-10, 10, 0.5, 0.0), (0, 100, 0.75, 75.0)],
 )
-def test_interpolate(a: float, b: float, c: float, exp_output: float):
+def test_interpolate(a: float, b: float, c: float, exp_output: float) -> None:
     assert interpolate(a, b, c) == exp_output
 
 
@@ -81,15 +81,15 @@ def test_process_tree_labels_idempotent():
 @pytest.mark.parametrize(
     "tree_str", ["(A,B,(C,REF_ROOT),E);", "(A,B,(C,REF_ROOT_HIDE),E);"]
 )
-def test_process_tree_labels_reroots(tree_str: str):
+def test_process_tree_labels_reroots(tree_str: str) -> None:
     t = ete3.Tree(tree_str)
     s1 = str(t)
     process_tree_labels(t)
     s2 = str(t)
-    assert not s1 == s2
+    assert s1 != s2
 
 
-def test_export(tmp_path: Path):
+def test_export(tmp_path: Path) -> None:
     t = ete3.Tree("(A,B,(C,D),E);")
     output_path = os.path.join(tmp_path, "output.pdf")
     result = export_tree(t, output_path, "my title")
@@ -106,7 +106,7 @@ def test_export(tmp_path: Path):
         "(A,B,(C,D,(E,F)));",
     ],
 )
-def test_load_tree(input: str):
+def test_load_tree(input: str) -> None:
     t1 = ete3.Tree(input)
 
     t2 = load_tree(input)

@@ -14,7 +14,7 @@ Global Variables:
 
 import os
 import re
-from typing import Any, Tuple, Optional, Dict
+from typing import Any, Dict, Optional, Tuple
 
 import ete3  # Tree drawing library
 
@@ -77,10 +77,8 @@ def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
 def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
     """Returns the width and the height of exported tree image."""
 
-    def get_x2(m): return m[2]
-    def get_y2(m): return m[3]
-    w = max([get_x2(m) for m in result["node_areas"].values()])
-    h = max([get_y2(m) for m in result["node_areas"].values()])
+    w = max(m[2] for m in result["node_areas"].values())
+    h = max(m[3] for m in result["node_areas"].values())
     return (w, h)
 
 
@@ -135,7 +133,8 @@ def export_tree(
     # More info: https://github.com/NVlabs/instant-ngp/discussions/300#discussioncomment-4814215
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
-    return t.render(output_path, w=w, h=h, units="in", tree_style=ts)
+    result: Dict[str, Any] = t.render(output_path, w=w, h=h, units="in", tree_style=ts)
+    return result
 
 
 def reverse_tree(node: ete3.Tree) -> None:
@@ -194,7 +193,7 @@ def process_tree_labels(t: ete3.Tree) -> None:
         )
         colour = COLOUR_LIST[colourindex or 0]
 
-        bold = True if font == "b" else False
+        bold = font == "b"
         fstyle = "italic" if font == "i" else "normal"
         face = ete3.TextFace(
             name, fgcolor=colour, bold=bold, fstyle=fstyle, fsize=fsize

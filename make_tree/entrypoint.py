@@ -1,10 +1,12 @@
 import argparse
 import sys
-from .make_tree import export_tree, load_tree
+
 from ete3.parser.newick import NewickError
 
+from .make_tree import export_tree, load_tree
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Tree maker script. Produces pretty PDFs."
     )
