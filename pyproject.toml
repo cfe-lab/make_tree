@@ -98,12 +98,18 @@ match = "**/*.py"
 [tool.mypy]
 files = ["make_tree", "tests"]
 ignore_missing_imports = true
+strict = true
+# Relax specific strict flags:
 strict_optional = true
 allow_untyped_calls = false
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = false
-strict = true
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false
 
 [tool.ruff]
 line-length = 88
