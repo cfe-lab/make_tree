@@ -22,7 +22,8 @@ def main():
         t = load_tree(args.input_path)
     except NewickError as e:
         print(
-            "Error: The tree file is not in the expected format. Please make sure it uses the standard Newick format.",
+            "Error: The tree file is not in the expected format. Please make sure it uses the standard Newick format. Details: ",
+            e,
             file=sys.stderr,
         )
         exit(1)
