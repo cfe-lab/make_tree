@@ -106,7 +106,7 @@ def export_tree(
     defaults to False
     :type variable_height: bool, optional
     :return: ...
-    :rtype: None
+    :rtype: Dict[str, Any]
     """
     ts = ete3.TreeStyle()
     ts.show_leaf_name = False
