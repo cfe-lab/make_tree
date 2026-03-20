@@ -77,8 +77,8 @@ def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
 def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
     """Returns the width and the height of exported tree image."""
 
-    get_x2 = lambda m: m[2]
-    get_y2 = lambda m: m[3]
+    def get_x2(m): return m[2]
+    def get_y2(m): return m[3]
     w = max([get_x2(m) for m in result["node_areas"].values()])
     h = max([get_y2(m) for m in result["node_areas"].values()])
     return (w, h)
