@@ -27,7 +27,6 @@ classifiers = [
 dependencies = [
   "ete3",
   "numpy",
-  "six",
   "PyQt5",
 ]
 
@@ -65,7 +64,6 @@ packages = ["make_tree"]
 dependencies = [
   "ete3",
   "numpy",
-  "six"
 ]
 
 [tool.hatch.envs.test]
