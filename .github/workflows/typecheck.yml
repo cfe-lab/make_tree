@@ -1,0 +1,26 @@
+name: Typecheck
+
+on:
+  push:
+    branches: ["main", "devel"]
+  pull_request:
+    branches: ["main", "devel"]
+
+jobs:
+  typecheck:
+    name: Mypy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: Run type checker
+        run: hatch env run --env dev typecheck

@@ -1,3 +1,5 @@
+[![Lint](https://github.com/cfe-lab/make_tree/actions/workflows/lint.yml/badge.svg)](https://github.com/cfe-lab/make_tree/actions/workflows/lint.yml)
+[![Typecheck](https://github.com/cfe-lab/make_tree/actions/workflows/typecheck.yml/badge.svg)](https://github.com/cfe-lab/make_tree/actions/workflows/typecheck.yml)
 [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 

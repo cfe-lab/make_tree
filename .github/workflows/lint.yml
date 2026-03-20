@@ -1,0 +1,29 @@
+name: Lint
+
+on:
+  push:
+    branches: ["main", "devel"]
+  pull_request:
+    branches: ["main", "devel"]
+
+jobs:
+  lint:
+    name: Ruff
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: Check formatting
+        run: hatch env run --env dev format-check
+
+      - name: Run linter
+        run: hatch env run --env dev lint
