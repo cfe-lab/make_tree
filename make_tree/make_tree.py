@@ -105,6 +105,7 @@ def export_tree(
     :rtype: Dict[str, Any]
     """
     from ete4.treeview import TextFace, TreeStyle
+    from ete4.treeview import drawer as _drawer
 
     ts = TreeStyle()
     ts.show_leaf_name = False
@@ -136,7 +137,9 @@ def export_tree(
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
     _apply_node_styles(t)
-    result: Dict[str, Any] = t.render(output_path, w=w, h=h, units="in", tree_style=ts)
+    result: Dict[str, Any] = _drawer.render_tree(
+        t, output_path, w=w, h=h, units="in", tree_style=ts
+    )
     return result
 
 
