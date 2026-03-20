@@ -27,7 +27,6 @@ classifiers = [
 dependencies = [
   "ete3",
   "numpy",
-  "six",
   "PyQt5",
 ]
 
@@ -38,6 +37,10 @@ test = [
   "pytest",
   "pytest-cov",
   "pytest-html",
+]
+dev = [
+  "ruff",
+  "mypy==1.9.0",
 ]
 
 [project.urls]
@@ -65,7 +68,6 @@ packages = ["make_tree"]
 dependencies = [
   "ete3",
   "numpy",
-  "six"
 ]
 
 [tool.hatch.envs.test]
@@ -79,14 +81,15 @@ extra-dependencies = [
 [tool.hatch.envs.dev]
 template = "test"
 extra-dependencies = [
-  "pytest",
-  "pytest-cov",
-  "pytest-html",
-  "mypy",
-  "mypy-extensions",
-  "black",
-  "isort"
+  "ruff",
+  "mypy==1.9.0",
 ]
+
+[tool.hatch.envs.dev.scripts]
+lint = "ruff check {args:.}"
+format = "ruff format {args:.}"
+format-check = "ruff format --check {args:.}"
+typecheck = "mypy {args:make_tree tests}"
 
 [tool.hatch.envs.test.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=make_tree --cov=tests {args}"
@@ -127,4 +130,33 @@ exclude_lines = [
 match = "**/*.py"
 
 [tool.mypy]
+files = ["make_tree", "tests"]
 ignore_missing_imports = true
+strict_optional = true
+allow_untyped_calls = false
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
+strict = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "SIM", # flake8-simplify
+]
+ignore = [
+  "E501", # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["make_tree"]

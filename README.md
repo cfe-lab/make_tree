@@ -1,3 +1,6 @@
+[![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 # Tree Maker
 
 Tree Maker is a Python script that allows you to create and visualize phylogenetic trees in a simple and automated way.
@@ -30,6 +33,12 @@ For development dependencies use [hatch](https://github.com/pypa/hatch).
 Activate an environment with `hatch env create [dev|test]`.
 
 Test with `hatch env run -e test cov`
+
+Lint with `hatch env run -e dev lint`
+
+Format with `hatch env run -e dev format`
+
+Type-check with `hatch env run -e dev typecheck`
 
 # Usage
 
