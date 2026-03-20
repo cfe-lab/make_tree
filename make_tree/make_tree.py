@@ -12,10 +12,8 @@ Global Variables:
    Basically it's (i)talic/(b)old flag first, then colour index, then the actual label.
 """
 
-import argparse
 import os
 import re
-import sys
 from typing import Any, Tuple, Optional, Dict
 
 import ete3  # Tree drawing library
