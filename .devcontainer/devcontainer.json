@@ -8,7 +8,7 @@
   "workspaceFolder": "/app",
 
   // Re-sync after VS Code mounts the live source tree over /app
-  "postCreateCommand": "uv sync --all-extras",
+  "postCreateCommand": "apt-get install -y git && uv sync --all-extras",
 
   "customizations": {
     "vscode": {
