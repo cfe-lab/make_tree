@@ -81,14 +81,20 @@ def get_result_dimensions(result: Dict[str, Any]) -> Tuple[int, int]:
     return (w, h)
 
 
-def _natural_scene_ratio(t: Tree, ts: Any) -> float:
-    """Return the natural height/width ratio of the tree scene built in memory.
+def _probe_scene_size(t: Tree, ts: Any) -> Tuple[float, float]:
+    """Return the (width, height) of the tree scene built in memory.
 
     Builds the full Qt scene (with all faces already applied) without writing
-    any file, then reads ``scene.sceneRect()`` for the intrinsic dimensions.
-    This is used to adjust ``ts.tree_width`` before the real render so that
-    Qt's ``IgnoreAspectRatio`` stretch (applied when both w and h are fixed)
-    does not distort the tree.
+    any file, then reads ``scene.sceneRect()``.
+
+    The relationship between ``ts.tree_width`` and scene width is exactly linear
+    with a slope of 1 and a positive intercept driven by label widths and margins::
+
+        scene_width = ts.tree_width + fixed_width
+
+    This means the correction to ``ts.tree_width`` needed to hit a target scene
+    width is simply an additive delta — no ratio multiplication required, and the
+    result is exact regardless of label length.
     """
     from ete4.treeview import drawer as _drawer
     from ete4.treeview.qt_render import render as _qt_render
@@ -105,7 +111,7 @@ def _natural_scene_ratio(t: Tree, ts: Any) -> float:
     scene.addItem(scene.master_item)
 
     sr = scene.sceneRect()
-    return sr.height() / sr.width()
+    return sr.width(), sr.height()
 
 
 def export_tree(
@@ -151,13 +157,15 @@ def export_tree(
     # faces that the final render will use so the ratio measurement is accurate.
     _apply_node_styles(t)
 
-    # Probe the natural scene ratio in memory (no file write).
+    # Probe the natural scene dimensions in memory (no file write).
     # When both w and h are fixed, ete4 uses IgnoreAspectRatio, which distorts
     # the tree if its intrinsic ratio differs from the target page ratio.
-    # Adjusting tree_width makes the two ratios match, so the stretch is neutral.
+    # Since scene_width = ts.tree_width + fixed_width (slope == 1, exactly),
+    # the required correction is a plain additive delta — no ratio multiply needed.
     PAGE_W, PAGE_H = 8.5, 11.0
-    natural_ratio = _natural_scene_ratio(t, ts)
-    ts.tree_width *= natural_ratio / (PAGE_H / PAGE_W)
+    scene_w, scene_h = _probe_scene_size(t, ts)
+    target_scene_w = scene_h * PAGE_W / PAGE_H
+    ts.tree_width += target_scene_w - scene_w
 
     return _drawer.render_tree(
         t, output_path, w=PAGE_W, h=PAGE_H, units="in", tree_style=ts
