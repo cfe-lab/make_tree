@@ -26,7 +26,7 @@ def main():
             e,
             file=sys.stderr,
         )
-        exit(1)
+        sys.exit(1)
 
     export_tree(t, args.output_path, args.title)
 
