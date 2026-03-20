@@ -7,9 +7,9 @@
   },
   "workspaceFolder": "/app",
 
-  // Install git for the vscode:
+  // Install git for the vscode.
   "features": {
-    "git": "latest"
+    "ghcr.io/devcontainers/features/git:1": {}
   },
 
   // Re-sync after VS Code mounts the live source tree over /app
