@@ -216,6 +216,6 @@ def load_tree(input_path: str) -> ete3.Tree:
     :rtype: ete3.Tree
     """
     t = ete3.Tree(input_path)
-    reverse_tree(t)  # TODO: make sure this is still required.
+    reverse_tree(t)
     process_tree_labels(t)
     return t
