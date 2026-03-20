@@ -162,8 +162,8 @@ def get_optimal_font_size(t: ete3.Tree) -> int:
     :rtype: int
     """
     leaf_count = sum(1 for _ in t.iter_leaves())
-    t = min(1, leaf_count / 120)
-    return round(interpolate(12, 4, t))
+    x = min(1, leaf_count / 120)
+    return round(interpolate(12, 4, x))
 
 
 def process_tree_labels(t: ete3.Tree) -> None:
