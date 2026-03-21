@@ -283,6 +283,7 @@ def export_tree(
 
     # Draw the base tree
     canvas, axes, mark = t.draw(
+        scale_bar=True,
         layout="r",
         width=PAGE_W,
         height=PAGE_H,
