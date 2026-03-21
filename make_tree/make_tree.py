@@ -199,21 +199,31 @@ def _collect_node_styles(t: toytree.ToyTree) -> List[Dict[str, Any]]:
     return result
 
 
-def _apply_italic_to_svg(svg_elem: ET.Element, italic_texts: Set[str]) -> None:
-    """Inject ``font-style:italic`` into matching ``<text>`` SVG elements.
+def _apply_text_styles_to_svg(
+    svg_elem: ET.Element,
+    italic_texts: Set[str],
+    bold_texts: Set[str],
+) -> None:
+    """Inject ``font-style`` / ``font-weight`` overrides into SVG ``<text>`` elements.
 
     toyplot's style validator rejects ``font-style``, so italic must be
     applied via direct XML manipulation after the element tree is built.
-    The reportlab renderer honours ``font-style:italic`` in element ``style``
-    attributes, producing correctly italicised PDF output.
+    Bold is handled the same way for tip labels (which have no per-label
+    bold API), and harmlessly reinforces bold already set on internal labels.
+    The reportlab renderer honours both properties in element ``style``
+    attributes.
     """
     for text_elem in svg_elem.iter(f"{{{_SVG_NS}}}text"):
-        if text_elem.text in italic_texts:
-            existing = text_elem.get("style", "")
-            if existing:
-                text_elem.set("style", existing + ";font-style:italic")
-            else:
-                text_elem.set("style", "font-style:italic")
+        text = text_elem.text
+        if text not in italic_texts and text not in bold_texts:
+            continue
+        extra: List[str] = []
+        if text in italic_texts:
+            extra.append("font-style:italic")
+        if text in bold_texts:
+            extra.append("font-weight:bold")
+        existing = text_elem.get("style", "")
+        text_elem.set("style", existing + ";" + ";".join(extra) if existing else ";".join(extra))
 
 
 def export_tree(
@@ -244,54 +254,75 @@ def export_tree(
 
     fsize = get_optimal_font_size(t)
     node_styles = _collect_node_styles(t)
+    ntips = t.ntips
     nnodes = t.nnodes
 
-    # Group nodes by (bold, italic, color) — one add_node_labels() per group
-    groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(list)
-    for idx, info in enumerate(node_styles):
+    # --- Tip labels: handed to draw() for native right-aligned positioning ---
+    tip_texts: List[str] = [node_styles[i]["text"] for i in range(ntips)]
+    tip_colors: List[str] = [node_styles[i]["color"] for i in range(ntips)]
+
+    # --- Internal node labels: grouped by (bold, italic, color) ---
+    int_groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(
+        list
+    )
+    for idx in range(ntips, nnodes):
+        info = node_styles[idx]
         if info["text"]:
             key = (info["bold"], info["italic"], info["color"])
-            groups[key].append((idx, info["text"]))
+            int_groups[key].append((idx, info["text"]))
 
+    # Collect texts that need SVG font-style / font-weight injection
     italic_texts: Set[str] = set()
+    bold_texts: Set[str] = set()
+    for _idx, info in enumerate(node_styles):
+        if info["text"]:
+            if info["italic"]:
+                italic_texts.add(info["text"])
+            if info["bold"]:
+                bold_texts.add(info["text"])
 
-    # Draw the tree onto a letter-sized canvas
+    # Draw the base tree
     canvas, axes, mark = t.draw(
         layout="r",
         width=PAGE_W,
         height=PAGE_H,
+        padding=50,
         node_sizes=0,
         node_mask=True,
-        tip_labels=False,
+        # Tip labels: built-in positioning with a right-side padding gap
+        tip_labels=tip_texts,
+        tip_labels_colors=tip_colors,
+        tip_labels_style={
+            "-toyplot-anchor-shift": "10px",
+            "font-size": f"{fsize}px",
+        },
+        # Slightly thicker, softer edges
+        edge_widths=1.5,
+        edge_style={"stroke": "#2c3e50", "stroke-linecap": "round"},
         label=title or "",
     )
 
-    # Add per-node labels, one call per unique (bold, italic, color) group
-    for (bold, italic, color), node_list in groups.items():
+    # Add internal-node labels, one call per unique (bold, italic, color) group
+    for (_bold, _italic, color), node_list in int_groups.items():
         labels: List[str] = [""] * nnodes
-        mask: List[bool] = [False] * nnodes  # False = hidden by default
+        mask: List[bool] = [False] * nnodes
         for idx, text in node_list:
             labels[idx] = text
-            mask[idx] = True  # True = show
-            if italic:
-                italic_texts.add(text)
-
-        style = {"font-weight": "bold"} if bold else None
+            mask[idx] = True
         t.annotate.add_node_labels(
             axes,
             labels,
             mask=mask,
             color=color,
             font_size=fsize,
-            style=style,
         )
 
     is_pdf = output_path.lower().endswith(".pdf")
 
-    # Obtain the SVG element for post-processing (italic) and/or PDF render
+    # SVG post-processing: inject italic / bold into matching text elements
     svg_elem = toyplot.svg.render(canvas)
-    if italic_texts:
-        _apply_italic_to_svg(svg_elem, italic_texts)
+    if italic_texts or bold_texts:
+        _apply_text_styles_to_svg(svg_elem, italic_texts, bold_texts)
 
     if is_pdf:
         surface = _rl_canvas.Canvas(output_path, pagesize=(PAGE_W, PAGE_H))
