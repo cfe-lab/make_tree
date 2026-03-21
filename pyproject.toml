@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "make_tree"
 description = 'Simple script for drawing phylogenetic trees'
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.15"
 license = "GPL-3.0"
 keywords = ["toytree", "tree maker", "pdf"]
 authors = [
@@ -20,6 +20,8 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
