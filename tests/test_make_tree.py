@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import pytest
 import toytree
@@ -26,7 +25,7 @@ from make_tree.make_tree import (
     ],
 )
 def test_parse_label_basic(
-    input: str, exp_output: Tuple[Optional[str], Optional[int], str]
+    input: str, exp_output: tuple[str | None, int | None, str]
 ) -> None:
     assert parse_label(input) == exp_output
 
@@ -50,7 +49,7 @@ def test_parse_label_errors(input: str) -> None:
     ids=["Three Node", "Six Node"],
 )
 def test_reverse_tree(
-    tree_input: str, original_tips: List[str], expected_reversed: List[str]
+    tree_input: str, original_tips: list[str], expected_reversed: list[str]
 ) -> None:
     t = toytree.tree(tree_input)
     assert list(t.get_tip_labels()) == original_tips

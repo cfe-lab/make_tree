@@ -15,7 +15,7 @@ Global Variables:
 import re
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import reportlab.pdfgen.canvas as _rl_canvas
 import toyplot
@@ -56,7 +56,7 @@ class TreeParseError(Exception):
     """Raised when a Newick string or file cannot be parsed as a tree."""
 
 
-def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
+def parse_label(label: str) -> tuple[str | None, int | None, str]:
     """Parse a node label encoding font style, colour index and display text.
 
     Labels may optionally carry a font flag (``i`` or ``b``) and a numeric
@@ -73,7 +73,7 @@ def parse_label(label: str) -> Tuple[Optional[str], Optional[int], str]:
     :rtype: Tuple[str | None, int | None, str]
     """
     match = LABEL_RE.match(label)
-    _colourindex: Optional[int] = None
+    _colourindex: int | None = None
     font, colourindex, name = (None, None, label)
 
     if match:
@@ -176,7 +176,7 @@ def process_tree_labels(t: toytree.ToyTree) -> toytree.ToyTree:
     return t
 
 
-def _collect_node_styles(t: toytree.ToyTree) -> List[Dict[str, Any]]:
+def _collect_node_styles(t: toytree.ToyTree) -> list[dict[str, Any]]:
     """Return a list of style dicts for every node in idx order.
 
     Each dict has keys: ``text`` (display string), ``color`` (hex),
@@ -201,8 +201,8 @@ def _collect_node_styles(t: toytree.ToyTree) -> List[Dict[str, Any]]:
 
 def _apply_text_styles_to_svg(
     svg_elem: ET.Element,
-    italic_texts: Set[str],
-    bold_texts: Set[str],
+    italic_texts: set[str],
+    bold_texts: set[str],
 ) -> None:
     """Inject ``font-style`` / ``font-weight`` overrides into SVG ``<text>`` elements.
 
@@ -217,7 +217,7 @@ def _apply_text_styles_to_svg(
         text = text_elem.text
         if text not in italic_texts and text not in bold_texts:
             continue
-        extra: List[str] = []
+        extra: list[str] = []
         if text in italic_texts:
             extra.append("font-style:italic")
         if text in bold_texts:
@@ -231,7 +231,7 @@ def _apply_text_styles_to_svg(
 def export_tree(
     t: toytree.ToyTree,
     output_path: str,
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> None:
     """Export *t* to a letter-size (8.5 x 11 in) PDF.
 
@@ -260,11 +260,11 @@ def export_tree(
     nnodes = t.nnodes
 
     # --- Tip labels: handed to draw() for native right-aligned positioning ---
-    tip_texts: List[str] = [node_styles[i]["text"] for i in range(ntips)]
-    tip_colors: List[str] = [node_styles[i]["color"] for i in range(ntips)]
+    tip_texts: list[str] = [node_styles[i]["text"] for i in range(ntips)]
+    tip_colors: list[str] = [node_styles[i]["color"] for i in range(ntips)]
 
     # --- Internal node labels: grouped by (bold, italic, color) ---
-    int_groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(list)
+    int_groups: dict[tuple[bool, bool, str], list[tuple[int, str]]] = defaultdict(list)
     for idx in range(ntips, nnodes):
         info = node_styles[idx]
         if info["text"]:
@@ -272,8 +272,8 @@ def export_tree(
             int_groups[key].append((idx, info["text"]))
 
     # Collect texts that need SVG font-style / font-weight injection
-    italic_texts: Set[str] = set()
-    bold_texts: Set[str] = set()
+    italic_texts: set[str] = set()
+    bold_texts: set[str] = set()
     for _idx, info in enumerate(node_styles):
         if info["text"]:
             if info["italic"]:
@@ -305,8 +305,8 @@ def export_tree(
 
     # Add internal-node labels, one call per unique (bold, italic, color) group
     for (_bold, _italic, color), node_list in int_groups.items():
-        labels: List[str] = [""] * nnodes
-        mask: List[bool] = [False] * nnodes
+        labels: list[str] = [""] * nnodes
+        mask: list[bool] = [False] * nnodes
         for idx, text in node_list:
             labels[idx] = text
             mask[idx] = True

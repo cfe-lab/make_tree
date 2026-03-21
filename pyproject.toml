@@ -112,7 +112,7 @@ disallow_untyped_decorators = false
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [

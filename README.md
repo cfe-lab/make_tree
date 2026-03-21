@@ -11,7 +11,7 @@ Tree Maker is a Python script that allows you to create and visualize phylogenet
 
 - Produces phylogenetic trees in PDF format.
 - Customizable label colors and styles.
-- Supports Python 3.8 and higher.
+- Supports Python 3.10 and higher.
 
 ## Installation
 
