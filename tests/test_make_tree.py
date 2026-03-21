@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pytest
 import toytree
@@ -41,12 +41,16 @@ def test_parse_label_errors(input: str) -> None:
     "tree_input, original_tips, expected_reversed",
     [
         ("(A,B,C);", ["A", "B", "C"], ["C", "B", "A"]),
-        ("(A,B,(C,D,(E,F)));", ["A", "B", "C", "D", "E", "F"], ["F", "E", "D", "C", "B", "A"]),
+        (
+            "(A,B,(C,D,(E,F)));",
+            ["A", "B", "C", "D", "E", "F"],
+            ["F", "E", "D", "C", "B", "A"],
+        ),
     ],
     ids=["Three Node", "Six Node"],
 )
 def test_reverse_tree(
-    tree_input: str, original_tips: list, expected_reversed: list
+    tree_input: str, original_tips: List[str], expected_reversed: List[str]
 ) -> None:
     t = toytree.tree(tree_input)
     assert list(t.get_tip_labels()) == original_tips
@@ -91,13 +95,12 @@ def test_process_tree_labels_idempotent() -> None:
 )
 def test_process_tree_labels_reroots(tree_str: str, ref_root_name: str) -> None:
     t = toytree.tree(tree_str)
-    original_tips = set(t.get_tip_labels())
     t2 = process_tree_labels(t)
     # Tree should now be rooted differently
     root_children_names = {n.name for n in t2.treenode.children}
-    assert ref_root_name in root_children_names or ref_root_name not in t2.get_tip_labels(), (
-        f"{ref_root_name} should be near the root or already removed"
-    )
+    assert (
+        ref_root_name in root_children_names or ref_root_name not in t2.get_tip_labels()
+    ), f"{ref_root_name} should be near the root or already removed"
 
 
 def test_process_tree_labels_hides_ref_root_hide() -> None:
@@ -109,8 +112,7 @@ def test_process_tree_labels_hides_ref_root_hide() -> None:
 def test_export_pdf(tmp_path: Path) -> None:
     t = toytree.tree("(A,B,(C,D),E);")
     output_path = str(tmp_path / "output.pdf")
-    result = export_tree(t, output_path, "my title")
-    assert result is None
+    export_tree(t, output_path, "my title")
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
 
@@ -118,10 +120,10 @@ def test_export_pdf(tmp_path: Path) -> None:
 def test_export_svg(tmp_path: Path) -> None:
     t = toytree.tree("(A,B,C);")
     output_path = str(tmp_path / "output.svg")
-    result = export_tree(t, output_path)
-    assert result is None
+    export_tree(t, output_path)
     assert os.path.exists(output_path)
-    content = open(output_path).read()
+    with open(output_path) as fh:
+        content = fh.read()
     assert "<svg" in content
 
 

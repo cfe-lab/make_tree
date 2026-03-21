@@ -12,18 +12,18 @@ Global Variables:
    Basically it's (i)talic/(b)old flag first, then colour index, then the actual label.
 """
 
-import os
 import re
+import xml.etree.ElementTree as ET
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-import toytree
-import toytree.mod
+import reportlab.pdfgen.canvas as _rl_canvas
 import toyplot
 import toyplot.reportlab
 import toyplot.reportlab.pdf
 import toyplot.svg
-import reportlab.pdfgen.canvas as _rl_canvas
+import toytree
+import toytree.mod
 
 COLOUR_LIST = [
     "#000000",
@@ -162,9 +162,7 @@ def process_tree_labels(t: toytree.ToyTree) -> toytree.ToyTree:
 
     # Reroot on the first node whose name contains REF_ROOT or REF_ROOT_HIDE
     for node in t.traverse():
-        if node.name and (
-            "REF_ROOT" in node.name or "REF_ROOT_HIDE" in node.name
-        ):
+        if node.name and ("REF_ROOT" in node.name or "REF_ROOT_HIDE" in node.name):
             t = t.root(node.name)
             break
 
@@ -178,7 +176,7 @@ def process_tree_labels(t: toytree.ToyTree) -> toytree.ToyTree:
     return t
 
 
-def _collect_node_styles(t: toytree.ToyTree) -> List[Dict]:
+def _collect_node_styles(t: toytree.ToyTree) -> List[Dict[str, Any]]:
     """Return a list of style dicts for every node in idx order.
 
     Each dict has keys: ``text`` (display string), ``color`` (hex),
@@ -201,7 +199,7 @@ def _collect_node_styles(t: toytree.ToyTree) -> List[Dict]:
     return result
 
 
-def _apply_italic_to_svg(svg_elem, italic_texts: set) -> None:
+def _apply_italic_to_svg(svg_elem: ET.Element, italic_texts: Set[str]) -> None:
     """Inject ``font-style:italic`` into matching ``<text>`` SVG elements.
 
     toyplot's style validator rejects ``font-style``, so italic must be
@@ -249,15 +247,13 @@ def export_tree(
     nnodes = t.nnodes
 
     # Group nodes by (bold, italic, color) — one add_node_labels() per group
-    groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(
-        list
-    )
+    groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(list)
     for idx, info in enumerate(node_styles):
         if info["text"]:
             key = (info["bold"], info["italic"], info["color"])
             groups[key].append((idx, info["text"]))
 
-    italic_texts: set = set()
+    italic_texts: Set[str] = set()
 
     # Draw the tree onto a letter-sized canvas
     canvas, axes, mark = t.draw(
@@ -306,8 +302,6 @@ def export_tree(
         surface.save()
     else:
         # SVG and other formats: serialize the (possibly italic-patched) tree
-        import xml.etree.ElementTree as ET
-
         ET.register_namespace("", _SVG_NS)
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
         ET.register_namespace("toyplot", "http://www.sandia.gov/toyplot")
