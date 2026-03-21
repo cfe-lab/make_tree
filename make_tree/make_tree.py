@@ -223,7 +223,9 @@ def _apply_text_styles_to_svg(
         if text in bold_texts:
             extra.append("font-weight:bold")
         existing = text_elem.get("style", "")
-        text_elem.set("style", existing + ";" + ";".join(extra) if existing else ";".join(extra))
+        text_elem.set(
+            "style", existing + ";" + ";".join(extra) if existing else ";".join(extra)
+        )
 
 
 def export_tree(
@@ -262,9 +264,7 @@ def export_tree(
     tip_colors: List[str] = [node_styles[i]["color"] for i in range(ntips)]
 
     # --- Internal node labels: grouped by (bold, italic, color) ---
-    int_groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(
-        list
-    )
+    int_groups: Dict[Tuple[bool, bool, str], List[Tuple[int, str]]] = defaultdict(list)
     for idx in range(ntips, nnodes):
         info = node_styles[idx]
         if info["text"]:
@@ -293,7 +293,7 @@ def export_tree(
         tip_labels=tip_texts,
         tip_labels_colors=tip_colors,
         tip_labels_style={
-            "-toyplot-anchor-shift": "10px",
+            "-toyplot-anchor-shift": "1px",
             "font-size": f"{fsize}px",
         },
         # Slightly thicker, softer edges
