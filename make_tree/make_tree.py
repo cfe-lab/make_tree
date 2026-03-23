@@ -18,6 +18,7 @@ from typing import Any
 
 import reportlab.pdfgen.canvas as _rl_canvas
 import toyplot
+import toyplot.font as _toyplot_font
 import toyplot.reportlab
 import toyplot.reportlab.pdf
 import toyplot.svg
@@ -46,6 +47,22 @@ COLOUR_LIST = [
 ]
 
 LABEL_RE = re.compile(r"(i|b)?([0-9]+)?!!(.*)")
+
+# ---------------------------------------------------------------------------
+# Page geometry & font metrics
+# ---------------------------------------------------------------------------
+
+_PAGE_W: float = 612.0  # letter width  (8.5 in × 72 pt/in)
+_PAGE_H: float = 792.0  # letter height (11 in × 72 pt/in)
+_PADDING: float = 50.0  # canvas padding passed to every draw() call
+_TIP_XSHIFT: int = 5  # rightward shift (canvas units) for tip labels
+
+# toyplot.font measures widths/heights in points; canvas units match PDF
+# points 1-to-1, BUT the font library converts `Npx` → `N*0.75 pt` internally.
+# To get canvas-unit widths we therefore scale back: pt × (1/0.75) = pt × 4/3.
+_PT_TO_CU: float = 4.0 / 3.0
+
+_FONT_LIB = _toyplot_font.ReportlabLibrary()
 
 
 class TreeParseError(Exception):
@@ -105,6 +122,134 @@ def get_optimal_font_size(t: toytree.ToyTree) -> int:
     leaf_count = t.ntips
     x = min(1, leaf_count / 120)
     return round(interpolate(12, 4, x))
+
+
+# ---------------------------------------------------------------------------
+# Font measurement & layout helpers
+# ---------------------------------------------------------------------------
+
+
+def _text_width_cu(text: str, size_px: int, bold: bool = False) -> float:
+    """Return the rendered width of *text* in canvas units.
+
+    Uses the toyplot ReportLab font library for accurate glyph metrics.
+    """
+    style: dict[str, str] = {"font-size": f"{size_px}px", "font-family": "helvetica"}
+    if bold:
+        style["font-weight"] = "bold"
+    return float(_FONT_LIB.font(style).width(text)) * _PT_TO_CU
+
+
+def _font_height_cu(size_px: int) -> float:
+    """Return the total line height (ascent + |descent|) in canvas units."""
+    f = _FONT_LIB.font({"font-size": f"{size_px}px", "font-family": "helvetica"})
+    return float(f.ascent - f.descent) * _PT_TO_CU
+
+
+def _required_gutter(
+    node_styles: list[dict[str, Any]], ntips: int, font_size: int
+) -> int:
+    """Return the horizontal gutter (canvas units) needed for the widest tip label.
+
+    This value is passed directly to ``ToyTree.draw(shrink=...)`` so the
+    trunk never overlaps the labels.
+    """
+    max_w = 0.0
+    for info in node_styles[:ntips]:
+        text = info["text"]
+        if text:
+            max_w = max(max_w, _text_width_cu(text, font_size, info["bold"]))
+    return int(max_w + _TIP_XSHIFT + 12)  # 12 cu safety margin
+
+
+def _layout_fits(
+    node_styles: list[dict[str, Any]], ntips: int, font_size: int
+) -> tuple[bool, int]:
+    """Return ``(fits, gutter)`` for *font_size*.
+
+    A layout *fits* when the font line height is at most 160 % of the
+    vertical pitch between adjacent tip rows.  The font metric height
+    includes internal leading and descenders; visible cap-height is roughly
+    70 % of it, so at factor 1.6 the glyph bodies leave a slightly more
+    obvious gap between rows while still allowing compact dense layouts.
+    """
+    gutter = _required_gutter(node_styles, ntips, font_size)
+    font_h = _font_height_cu(font_size)
+    vertical_pitch = (_PAGE_H - 2 * _PADDING) / max(1, ntips)
+    fits = font_h <= vertical_pitch * 1.6
+    return fits, gutter
+
+
+def _find_best_font_size(
+    node_styles: list[dict[str, Any]], ntips: int
+) -> tuple[int, int]:
+    """Binary-search the largest integer font size in ``[4, 18]`` that fits.
+
+    The upper bound of 18 pt prevents absurdly large labels on very sparse
+    trees.  Fit is determined purely from font metrics and page geometry —
+    no rendering pass is needed.  Returns ``(best_size, best_gutter)``.
+    """
+    lo, hi = 4, 18
+    best_size, best_gutter = 4, _required_gutter(node_styles, ntips, 4)
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        ok, gutter = _layout_fits(node_styles, ntips, mid)
+        if ok:
+            best_size = mid
+            best_gutter = gutter
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return best_size, best_gutter
+
+
+def _add_labels(
+    t: toytree.ToyTree,
+    axes: Any,
+    node_styles: list[dict[str, Any]],
+    font_size: int,
+) -> None:
+    """Add per-node text labels to *axes* with proper CSS anchoring.
+
+    Tip labels use ``text-anchor: start`` so text originates immediately to
+    the right of the tip node.  Internal labels use ``text-anchor: middle``
+    to stay centred on the node.  Both use ``alignment-baseline: middle``
+    for vertical centring.
+    """
+    ntips = t.ntips
+    nnodes = t.nnodes
+
+    groups: dict[tuple[bool, bool, bool, str], list[tuple[int, str]]] = defaultdict(
+        list
+    )
+    for idx, info in enumerate(node_styles):
+        if info["text"]:
+            key = (idx < ntips, info["bold"], info["italic"], info["color"])
+            groups[key].append((idx, info["text"]))
+
+    for (is_tip, bold, italic, color), node_list in groups.items():
+        labels: list[str] = [""] * nnodes
+        mask: list[bool] = [False] * nnodes
+        for idx, text in node_list:
+            labels[idx] = f"<i>{text}</i>" if italic else text
+            mask[idx] = True
+
+        style: dict[str, str] = {
+            "alignment-baseline": "middle",
+            "text-anchor": "start" if is_tip else "middle",
+        }
+        if bold:
+            style["font-weight"] = "bold"
+
+        t.annotate.add_node_labels(
+            axes,
+            labels,
+            mask=mask,
+            color=color,
+            font_size=font_size,
+            xshift=_TIP_XSHIFT if is_tip else 0,
+            style=style,
+        )
 
 
 def _reverse_node(node: "toytree.Node") -> None:
@@ -200,11 +345,18 @@ def export_tree(
     output_path: str,
     title: str | None = None,
 ) -> None:
-    """Export *t* to a letter-size (8.5 x 11 in) PDF.
+    """Export *t* to a letter-size (8.5 x 11 in) PDF or SVG.
 
-    Renders a rectangular phylogram with per-node label colours and
-    bold/italic styling derived from the :func:`parse_label` encoding.
+    Renders a right-facing rectangular phylogram with per-node label colours
+    and bold/italic styling derived from the :func:`parse_label` encoding.
     All named nodes — tips and internal — receive labels.
+
+    The font size is chosen by binary search (largest integer in ``[4, 40]``
+    that fits vertically).  The horizontal gutter for tip labels is computed
+    from measured text widths and passed to ``ToyTree.draw(shrink=...)`` so
+    the tree trunk never collides with labels.  Tip labels use
+    ``text-anchor: start`` so they originate flush with the tip node;
+    internal labels use ``text-anchor: middle``.
 
     PDF output uses toyplot and reportlab; no Qt or PyQt dependency is
     required.  SVG output is also supported when *output_path* ends with
@@ -218,31 +370,16 @@ def export_tree(
     :type title: str | None
     :return: None
     """
-    # Letter size: 8.5 x 11 inches expressed as points (1 pt = 1/72 in)
-    PAGE_W, PAGE_H = 612.0, 792.0
-
-    fsize = get_optimal_font_size(t)
     node_styles = _collect_node_styles(t)
-    ntips = t.ntips
-    nnodes = t.nnodes
+    fsize, shrink = _find_best_font_size(node_styles, t.ntips)
 
-    # Group nodes by (is_tip, bold, italic, color) — one add_node_labels() per group.
-    # Tip labels receive an xshift so they don't overlap branch lines.
-    groups: dict[tuple[bool, bool, bool, str], list[tuple[int, str]]] = defaultdict(
-        list
-    )
-    for idx, info in enumerate(node_styles):
-        if info["text"]:
-            key = (idx < ntips, info["bold"], info["italic"], info["color"])
-            groups[key].append((idx, info["text"]))
-
-    # Draw the base tree (tip labels off — handled uniformly by add_node_labels)
-    canvas, axes, mark = t.draw(
+    canvas, axes, _ = t.draw(
         scale_bar=True,
         layout="r",
-        width=PAGE_W,
-        height=PAGE_H,
-        padding=50,
+        width=_PAGE_W,
+        height=_PAGE_H,
+        padding=_PADDING,
+        shrink=shrink,
         node_sizes=0,
         node_mask=True,
         tip_labels=False,
@@ -251,32 +388,14 @@ def export_tree(
         label=title or "",
     )
 
-    # Add labels for each (is_tip, bold, italic, color) group.
-    # Italic is expressed via toyplot rich-text <i>…</i> markup in the label
-    # text itself, because toyplot's CSS validator does not allow font-style.
-    for (is_tip, bold, italic, color), node_list in groups.items():
-        labels: list[str] = [""] * nnodes
-        mask: list[bool] = [False] * nnodes
-        for idx, text in node_list:
-            labels[idx] = f"<i>{text}</i>" if italic else text
-            mask[idx] = True
-        style: dict[str, str] = {"font-weight": "bold"} if bold else {}
-        t.annotate.add_node_labels(
-            axes,
-            labels,
-            mask=mask,
-            color=color,
-            font_size=fsize,
-            xshift=10 if is_tip else 0,
-            style=style or None,
-        )
+    _add_labels(t, axes, node_styles, fsize)
 
     is_pdf = output_path.lower().endswith(".pdf")
 
     if is_pdf:
         svg_elem = toyplot.svg.render(canvas)
-        surface = _rl_canvas.Canvas(output_path, pagesize=(PAGE_W, PAGE_H))
-        surface.translate(0, PAGE_H)
+        surface = _rl_canvas.Canvas(output_path, pagesize=(_PAGE_W, _PAGE_H))
+        surface.translate(0, _PAGE_H)
         surface.scale(1, -1)
         toyplot.reportlab.render(svg_elem, surface)
         surface.showPage()
