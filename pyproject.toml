@@ -6,9 +6,9 @@ build-backend = "hatchling.build"
 name = "make_tree"
 description = 'Simple script for drawing phylogenetic trees'
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10,<3.15"
 license = "GPL-3.0"
-keywords = ["ete4", "tree maker", "pdf"]
+keywords = ["toytree", "tree maker", "pdf"]
 authors = [
   { name = "Vitaliy Mysak", email = "vmysak@bccfe.ca" },
 ]
@@ -17,16 +17,17 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "ete4",
-  "PyQt6; sys_platform != 'win32'",
+  "toytree>=3.0.11",
+  "toyplot",
 ]
 
 dynamic = ["version"]
@@ -111,7 +112,7 @@ disallow_untyped_decorators = false
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [

@@ -1,9 +1,7 @@
 import argparse
 import sys
 
-from ete4.parser.newick import NewickError
-
-from .make_tree import export_tree, load_tree
+from .make_tree import TreeParseError, export_tree, load_tree
 
 
 def main() -> None:
@@ -22,7 +20,7 @@ def main() -> None:
 
     try:
         t = load_tree(args.input_path)
-    except NewickError as e:
+    except TreeParseError as e:
         print(
             "Error: The tree file is not in the expected format. Please make sure it uses the standard Newick format. Details: ",
             e,

@@ -11,7 +11,7 @@ Tree Maker is a Python script that allows you to create and visualize phylogenet
 
 - Produces phylogenetic trees in PDF format.
 - Customizable label colors and styles.
-- Supports Python 3.8 and higher.
+- Supports Python 3.10 and higher.
 
 ## Installation
 
@@ -65,8 +65,6 @@ uv run mypy make_tree tests
 # Usage
 
 > **Note:** tree_maker requires trees be generated from [Clustal](http://www.clustal.org/)!
-
-> **IMPORTANT:** You will need `libgl1` to use this, `apt install libgl1` for Debian based systems.
 
 To use Tree Maker, run the following command:
 
