@@ -6,6 +6,7 @@ import toytree
 
 from make_tree.make_tree import (
     TreeParseError,
+    _collect_node_styles,
     export_tree,
     get_optimal_font_size,
     interpolate,
@@ -124,6 +125,15 @@ def test_export_svg(tmp_path: Path) -> None:
     with open(output_path) as fh:
         content = fh.read()
     assert "<svg" in content
+
+
+def test_collect_node_styles_preserves_italic() -> None:
+    t = toytree.tree("(i!!A,b2!!B,C);")
+    styles = _collect_node_styles(t)
+    texts = [s for s in styles if s["text"]]
+    assert any(s["text"] == "A" and s["italic"] for s in texts)
+    assert any(s["text"] == "B" and s["bold"] for s in texts)
+    assert any(s["text"] == "C" and not s["italic"] and not s["bold"] for s in texts)
 
 
 def test_export_with_styled_labels(tmp_path: Path) -> None:

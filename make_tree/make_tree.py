@@ -176,7 +176,7 @@ def _collect_node_styles(t: toytree.ToyTree) -> list[dict[str, Any]]:
     """Return a list of style dicts for every node in idx order.
 
     Each dict has keys: ``text`` (display string), ``color`` (hex),
-    ``bold`` (bool).
+    ``bold`` (bool), ``italic`` (bool).
     """
     result = []
     for node in t[:]:  # idx-ordered slice
@@ -189,6 +189,7 @@ def _collect_node_styles(t: toytree.ToyTree) -> list[dict[str, Any]]:
                 "text": text,
                 "color": COLOUR_LIST[ci or 0],
                 "bold": font == "b",
+                "italic": font == "i",
             }
         )
     return result
@@ -202,7 +203,7 @@ def export_tree(
     """Export *t* to a letter-size (8.5 x 11 in) PDF.
 
     Renders a rectangular phylogram with per-node label colours and
-    bold styling derived from the :func:`parse_label` encoding.
+    bold/italic styling derived from the :func:`parse_label` encoding.
     All named nodes — tips and internal — receive labels.
 
     PDF output uses toyplot and reportlab; no Qt or PyQt dependency is
@@ -225,12 +226,14 @@ def export_tree(
     ntips = t.ntips
     nnodes = t.nnodes
 
-    # Group nodes by (is_tip, bold, color) — one add_node_labels() per group.
+    # Group nodes by (is_tip, bold, italic, color) — one add_node_labels() per group.
     # Tip labels receive an xshift so they don't overlap branch lines.
-    groups: dict[tuple[bool, bool, str], list[tuple[int, str]]] = defaultdict(list)
+    groups: dict[tuple[bool, bool, bool, str], list[tuple[int, str]]] = defaultdict(
+        list
+    )
     for idx, info in enumerate(node_styles):
         if info["text"]:
-            key = (idx < ntips, info["bold"], info["color"])
+            key = (idx < ntips, info["bold"], info["italic"], info["color"])
             groups[key].append((idx, info["text"]))
 
     # Draw the base tree (tip labels off — handled uniformly by add_node_labels)
@@ -247,12 +250,14 @@ def export_tree(
         label=title or "",
     )
 
-    # Add labels for each (is_tip, bold, color) group
-    for (is_tip, bold, color), node_list in groups.items():
+    # Add labels for each (is_tip, bold, italic, color) group.
+    # Italic is expressed via toyplot rich-text <i>…</i> markup in the label
+    # text itself, because toyplot's CSS validator does not allow font-style.
+    for (is_tip, bold, italic, color), node_list in groups.items():
         labels: list[str] = [""] * nnodes
         mask: list[bool] = [False] * nnodes
         for idx, text in node_list:
-            labels[idx] = text
+            labels[idx] = f"<i>{text}</i>" if italic else text
             mask[idx] = True
         style: dict[str, str] = {"font-weight": "bold"} if bold else {}
         t.annotate.add_node_labels(
