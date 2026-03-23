@@ -238,6 +238,7 @@ def export_tree(
 
     # Draw the base tree (tip labels off — handled uniformly by add_node_labels)
     canvas, axes, mark = t.draw(
+        scale_bar=True,
         layout="r",
         width=PAGE_W,
         height=PAGE_H,
