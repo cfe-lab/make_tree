@@ -28,6 +28,32 @@ uv tool install .
 uv tool install git+https://github.com/cfe-lab/make_tree
 ```
 
+# Usage
+
+> **Note:** tree_maker requires trees be generated from [Clustal](http://www.clustal.org/)!
+
+To use Tree Maker, run the following command:
+
+```shell
+make_tree input.newick output.pdf
+```
+
+Alternatively, import it into your own project:
+
+```python
+from make_tree import load_tree, export_tree
+
+t = load_tree("A,B,C;")
+export_tree(t, "/tmp/tree.pdf", "My tree")
+```
+
+This will generate a PDF file containing the phylogenetic tree.
+
+# Contributing
+
+Contributions to Tree Maker are welcome!
+If you find any issues or have suggestions for improvements, please open an issue or submit a pull request on the GitHub repository.
+
 #### Development
 
 Use [uv](https://github.com/astral-sh/uv) to manage the environment.
@@ -61,32 +87,6 @@ Type-check:
 ```shell
 uv run mypy make_tree tests
 ```
-
-# Usage
-
-> **Note:** tree_maker requires trees be generated from [Clustal](http://www.clustal.org/)!
-
-To use Tree Maker, run the following command:
-
-```shell
-make_tree input.newick output.pdf
-```
-
-Alternatively, import it into your own project:
-
-```python
-from make_tree import load_tree, export_tree
-
-t = load_tree("A,B,C;")
-export_tree(t, "/tmp/tree.pdf", "My tree")
-```
-
-This will generate a PDF file containing the phylogenetic tree.
-
-# Contributing
-
-Contributions to Tree Maker are welcome!
-If you find any issues or have suggestions for improvements, please open an issue or submit a pull request on the GitHub repository.
 
 # License
 
