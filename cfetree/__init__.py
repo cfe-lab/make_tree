@@ -1,4 +1,4 @@
-from .make_tree import (
+from .cfetree import (
     COLOUR_LIST,
     TreeParseError,
     export_tree,

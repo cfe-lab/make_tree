@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import toytree
 
-from make_tree.make_tree import (
+from cfetree.cfetree import (
     TreeParseError,
     _collect_node_styles,
     export_tree,

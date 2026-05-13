@@ -1,5 +1,5 @@
-[![Lint](https://github.com/cfe-lab/make_tree/actions/workflows/lint.yml/badge.svg)](https://github.com/cfe-lab/make_tree/actions/workflows/lint.yml)
-[![Typecheck](https://github.com/cfe-lab/make_tree/actions/workflows/typecheck.yml/badge.svg)](https://github.com/cfe-lab/make_tree/actions/workflows/typecheck.yml)
+[![Lint](https://github.com/cfe-lab/cfetree/actions/workflows/lint.yml/badge.svg)](https://github.com/cfe-lab/cfetree/actions/workflows/lint.yml)
+[![Typecheck](https://github.com/cfe-lab/cfetree/actions/workflows/typecheck.yml/badge.svg)](https://github.com/cfe-lab/cfetree/actions/workflows/typecheck.yml)
 [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -18,14 +18,14 @@ Tree Maker is a Python script that allows you to create and visualize phylogenet
 #### Option 1: Clone the repository
 
 ```shell
-git clone https://github.com/cfe-lab/make_tree.git
+git clone https://github.com/cfe-lab/cfetree.git
 uv tool install .
 ```
 
 #### Option 2: Install directly from the repository
 
 ```shell
-uv tool install git+https://github.com/cfe-lab/make_tree
+uv tool install git+https://github.com/cfe-lab/cfetree
 ```
 
 # Usage
@@ -35,13 +35,13 @@ uv tool install git+https://github.com/cfe-lab/make_tree
 To use Tree Maker, run the following command:
 
 ```shell
-make_tree input.newick output.pdf
+cfetree input.newick output.pdf
 ```
 
 Alternatively, import it into your own project:
 
 ```python
-from make_tree import load_tree, export_tree
+from cfetree import load_tree, export_tree
 
 t = load_tree("A,B,C;")
 export_tree(t, "/tmp/tree.pdf", "My tree")
@@ -85,7 +85,7 @@ uv run ruff format
 Type-check:
 
 ```shell
-uv run mypy make_tree tests
+uv run mypy cfetree tests
 ```
 
 # License

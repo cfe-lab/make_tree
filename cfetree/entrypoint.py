@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from .make_tree import TreeParseError, export_tree, load_tree
+from .cfetree import TreeParseError, export_tree, load_tree
 
 
 def main() -> None:

@@ -31,7 +31,7 @@ jobs:
         run: uv run pytest --no-cov
 
       - name: Run in cmd line
-        run: uv run make_tree "(A,B,(C,D),E);" test.pdf "foo bar"
+        run: uv run cfetree "(A,B,(C,D),E);" test.pdf "foo bar"
 
   test:
     name: Test and report on ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
           --cov-report xml:coverage.xml
           --cov-report term
           --cov-config=pyproject.toml
-          --cov=make_tree
+          --cov=cfetree
           --cov=tests
 
       - name: Archive code coverage results

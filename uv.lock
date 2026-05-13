@@ -276,7 +276,7 @@ wheels = [
 ]
 
 [[package]]
-name = "make-tree"
+name = "cfetree"
 source = { editable = "." }
 dependencies = [
     { name = "toyplot" },

@@ -11,7 +11,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --extra dev --no-install-project
 
 # Copy source and install the package itself
-COPY make_tree/ make_tree/
+COPY cfetree/ cfetree/
 COPY tests/ tests/
 COPY README.md ./
 RUN uv sync --extra dev

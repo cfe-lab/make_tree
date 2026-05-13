@@ -23,4 +23,4 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run type checker
-        run: uv run mypy make_tree tests
+        run: uv run mypy cfetree tests
