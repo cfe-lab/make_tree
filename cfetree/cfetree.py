@@ -296,8 +296,9 @@ def process_tree_labels(t: toytree.ToyTree) -> toytree.ToyTree:
     for node in t.traverse():
         if node.dist is not None and node.dist < 0:
             d = abs(node.dist)
-            for sibling in node.up.children:
-                sibling._dist = (sibling.dist or 0) + d
+            if node.up is not None:
+                for sibling in node.up.children:
+                    sibling._dist = (sibling.dist or 0) + d
             node._dist = 0.0
     t._update()
 
