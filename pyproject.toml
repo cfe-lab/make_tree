@@ -127,6 +127,7 @@ select = [
 ]
 ignore = [
   "E501", # line too long (handled by formatter)
+  "UP007", # Union syntax is supported in Python 3.10+ (handled by mypy)
 ]
 
 [tool.ruff.lint.isort]

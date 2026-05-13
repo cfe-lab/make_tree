@@ -14,7 +14,8 @@ Global Variables:
 
 import re
 from collections import defaultdict
-from typing import Any
+from pathlib import Path
+from typing import Any, Union
 
 import reportlab.pdfgen.canvas as _rl_canvas
 import toyplot
@@ -405,24 +406,24 @@ def export_tree(
         toyplot.svg.render(canvas, output_path)
 
 
-def load_tree(input_path: str) -> toytree.ToyTree:
+def load_tree(description: Union[str, Path]) -> toytree.ToyTree:
     """Load a tree from a file path or a raw Newick string.
 
     After parsing, the tree is preprocessed by :func:`reverse_tree` and
     :func:`process_tree_labels`.
 
-    :param input_path: Either a path to a Newick file or a Newick string
+    :param description: Either a path to a Newick file or a Newick string
         such as ``"(A,B,C);"``
-    :type input_path: str
+    :type description: Union[str, Path]
     :raises TreeParseError: If the input cannot be parsed as a valid tree.
     :return: Loaded and preprocessed tree.
     :rtype: toytree.ToyTree
     """
     try:
-        t = toytree.tree(input_path)
+        t = toytree.tree(description)
     except Exception as exc:
         raise TreeParseError(
-            f"Could not parse tree from {input_path!r}: {exc}"
+            f"Could not parse tree from {repr(str(description))}: {exc}"
         ) from exc
 
     reverse_tree(t)
