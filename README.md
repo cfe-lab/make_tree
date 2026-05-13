@@ -15,17 +15,8 @@ Tree Maker is a Python script that allows you to create and visualize phylogenet
 
 ## Installation
 
-#### Option 1: Clone the repository
-
 ```shell
-git clone https://github.com/cfe-lab/cfetree.git
-uv tool install .
-```
-
-#### Option 2: Install directly from the repository
-
-```shell
-uv tool install git+https://github.com/cfe-lab/cfetree
+uv tool install cfetree
 ```
 
 # Usage
