@@ -21,9 +21,9 @@ uv tool install cfetree
 
 # Usage
 
-> **Note:** tree_maker requires trees be generated from [Clustal](http://www.clustal.org/)!
+> **Note:** CFE Tree Maker requires trees be generated from [Clustal](http://www.clustal.org/)!
 
-To use Tree Maker, run the following command:
+To use CFE Tree Maker, run the following command:
 
 ```shell
 cfetree input.newick output.pdf
@@ -42,7 +42,7 @@ This will generate a PDF file containing the phylogenetic tree.
 
 # Contributing
 
-Contributions to Tree Maker are welcome!
+Contributions to CFE Tree Maker are welcome!
 If you find any issues or have suggestions for improvements, please open an issue or submit a pull request on the GitHub repository.
 
 #### Development
@@ -81,4 +81,4 @@ uv run mypy cfetree tests
 
 # License
 
-Tree Maker is licensed under the GNU General Public License v3.0. See the LICENSE file for more details.
+CFE Tree Maker is licensed under the GNU General Public License v3.0. See the LICENSE file for more details.
