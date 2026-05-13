@@ -52,7 +52,7 @@ Source = "https://github.com/cfe-lab/cfetree"
 cfetree = "cfetree.entrypoint:main"
 
 [tool.hatch.version]
-path = "cfetree/__about__.py"
+source = "vcs"
 
 [tool.hatch.build]
 exclude = [
