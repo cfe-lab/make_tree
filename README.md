@@ -3,9 +3,9 @@
 [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-# Tree Maker
+# CFE Tree Maker
 
-Tree Maker is a Python script that allows you to create and visualize phylogenetic trees in a simple and automated way.
+CFE Tree Maker is a Python script that allows you to create and visualize phylogenetic trees in a simple and automated way.
 
 ## Features
 
